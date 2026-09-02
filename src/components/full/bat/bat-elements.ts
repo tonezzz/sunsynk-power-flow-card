@@ -257,7 +257,7 @@ export const renderBatteryElements = (
 				style="overflow: visible; display: ${
 					batteryCount >= 2 ? 'inline' : 'none'
 				};"
-				x="${batteryCount >= 2 ? '19%' : '0%'}"
+				x="${batteryCount >= 3 ? '12.25%' : '19%'}" y="0%"
 			>
 				<a
 					href="#"
@@ -432,7 +432,7 @@ export const renderBatteryElements = (
 				style="overflow: visible; display: ${
 					batteryCount >= 3 ? 'inline' : 'none'
 				};"
-				x="36%"
+				x="0%" y="90"
 			>
 				<a
 					href="#"
@@ -607,7 +607,7 @@ export const renderBatteryElements = (
 				style="overflow: visible; display: ${
 					batteryCount >= 4 ? 'inline' : 'none'
 				};"
-				x="53%"
+				x="12.25%" y="90"
 			>
 				<a
 					href="#"
@@ -1262,6 +1262,356 @@ export const renderBatteryElements = (
 					${data.battery2StateMsg}
 				</text>
 			</svg>
+<svg
+				id="battery3_remaining"
+				style="overflow: visible; display: ${
+					batteryCount >= 3 ? 'inline' : 'none'
+				};"
+				x="0%" y="90"
+			>
+				${renderText(
+					'duration_text',
+					132,
+					368,
+					true,
+					'st3 left-align',
+					data.battery3Energy === 0 ||
+						(config.battery3.invert_flow === true
+							? battery3Power >= 0
+							: battery3Power <= 0) ||
+						isFloating3
+						? 'transparent'
+						: battery3Colour,
+					`${localize('common.runtime_to')} ${data.battery3Capacity}% @${data.formattedResultTime3}`,
+				)}
+				${renderText(
+					'duration_text_charging',
+					132,
+					368,
+					true,
+					'st3 left-align',
+					data.battery3Energy === 0 ||
+						(config.battery3.invert_flow === true
+							? battery3Power <= 0
+							: battery3Power >= 0) ||
+						isFloating3
+						? 'transparent'
+						: battery3Colour,
+					`${localize('common.to')} ${data.battery3Capacity}% ${localize('common.charge')} @${data.formattedResultTime3}`,
+				)}
+				${renderText(
+					'floating',
+					132,
+					368,
+					true,
+					'st3 left-align',
+					data.battery3Energy === 0 || !isFloating3
+						? 'transparent'
+						: battery3Colour,
+					localize('common.battery_floating'),
+				)}
+				${renderText(
+					'battery_soc_184',
+					202,
+					327,
+					!data.inverterProg.show && config.battery3?.shutdown_soc_offgrid,
+					`${config.battery3.hide_soc ? 'st12' : 'st14 left-align'}`,
+					battery3Colour,
+					`${batteryShutdown3}%`,
+				)}
+				${renderText(
+					'battery_soc_184',
+					202,
+					340,
+					!data.inverterProg.show && config.battery3?.shutdown_soc_offgrid,
+					`${config.battery3.hide_soc ? 'st12' : 'st14 left-align'}`,
+					battery3Colour,
+					`${data.shutdownOffGrid3}%`,
+				)}
+				<svg
+					id="Battery3_SOC"
+					style="overflow: visible; 
+                        display: ${
+													config.entities.battery3_soc_184 === 'none' ||
+													!data.stateBattery3Soc.isValid()
+														? 'none'
+														: 'inline'
+												};"
+				>
+					${createTextWithPopup(
+						'battery_soc_184',
+						132,
+						333,
+						config.entities.battery3_soc_184 === 'none' ||
+							!data.stateBattery3Soc.isValid(),
+						'st13 st8 left-align',
+						battery3Colour,
+						!data.inverterProg.show && config.battery3.shutdown_soc_offgrid
+							? config.battery3.hide_soc
+								? data.stateBattery3Soc.toDisplay()
+								: `${data.stateBattery3Soc.toNum(0)}% |`
+							: config.battery3.hide_soc
+								? data.stateBattery3Soc.toDisplay()
+								: `${data.stateBattery3Soc.toNum(0)}%`,
+						(e) => Utils.handlePopup(e, config.entities.battery3_soc_184),
+						true,
+					)}
+				</svg>
+				<svg
+					id="Battery3_SOC_Program_Capacity"
+					style="overflow: visible; 
+                        display: ${
+													config.entities.battery3_soc_184 === 'none' ||
+													!data.stateBattery3Soc.isValid() ||
+													config.battery3.hide_soc ||
+													!data.inverterProg.show
+														? 'none'
+														: 'inline'
+												};"
+				>
+					${createTextWithPopup(
+						'battery_soc_184',
+						132,
+						333,
+						config.entities.battery3_soc_184 === 'none' ||
+							!data.stateBattery3Soc.isValid(),
+						'st13 st8 left-align',
+						battery3Colour,
+						`${data.stateBattery3Soc.toNum(0)}% | ${data.inverterProg.capacity || 0}%`,
+						(e) => Utils.handlePopup(e, config.entities.battery3_soc_184),
+						true,
+					)}
+				</svg>
+				<svg
+					id="Battery3_SOC_Shutdown"
+					style="overflow: visible; 
+                        display: ${
+													config.entities.battery3_soc_184 !== 'none' &&
+													data.stateBattery3Soc.isValid() &&
+													!config.battery3.hide_soc &&
+													!data.inverterProg.show &&
+													config.battery3?.shutdown_soc &&
+													!config.battery3?.shutdown_soc_offgrid
+														? 'inline'
+														: 'none'
+												};"
+				>
+					${createTextWithPopup(
+						'battery_soc_184',
+						132,
+						333,
+						config.entities.battery3_soc_184 === 'none' ||
+							!data.stateBattery3Soc.isValid(),
+						'st13 st8 left-align',
+						battery3Colour,
+						`${data.stateBattery3Soc.toNum(0)}% | ${batteryShutdown3 || 0}%`,
+						(e) => Utils.handlePopup(e, config.entities.battery3_soc_184),
+						true,
+					)}
+				</svg>
+				${renderText(
+					'duration',
+					132,
+					352,
+					true,
+					`${largeFont !== true ? 'st14' : 'st4'} left-align`,
+					data.battery3Energy === 0 || isFloating3 || battery3Power === 0
+						? 'transparent'
+						: battery3Colour,
+					data.batteryDuration3,
+				)}
+				<circle
+					id="bat3"
+					cx="136"
+					cy="377"
+					r="3"
+					display="${
+						config.entities?.battery3_status === 'none' ||
+						!config.entities?.battery3_status
+							? 'none'
+							: ''
+					}"
+					fill="${data.battery3StateColour}"
+				/>
+				<text x="144" y="378" class="st3 left-align" fill="${battery3Colour}">
+					${data.battery3StateMsg}
+				</text>
+			</svg>
+<svg
+				id="battery4_remaining"
+				style="overflow: visible; display: ${
+					batteryCount >= 4 ? 'inline' : 'none'
+				};"
+				x="12.25%" y="90"
+			>
+				${renderText(
+					'duration_text',
+					132,
+					368,
+					true,
+					'st3 left-align',
+					data.battery4Energy === 0 ||
+						(config.battery4.invert_flow === true
+							? battery4Power >= 0
+							: battery4Power <= 0) ||
+						isFloating4
+						? 'transparent'
+						: battery4Colour,
+					`${localize('common.runtime_to')} ${data.battery4Capacity}% @${data.formattedResultTime4}`,
+				)}
+				${renderText(
+					'duration_text_charging',
+					132,
+					368,
+					true,
+					'st3 left-align',
+					data.battery4Energy === 0 ||
+						(config.battery4.invert_flow === true
+							? battery4Power <= 0
+							: battery4Power >= 0) ||
+						isFloating4
+						? 'transparent'
+						: battery4Colour,
+					`${localize('common.to')} ${data.battery4Capacity}% ${localize('common.charge')} @${data.formattedResultTime4}`,
+				)}
+				${renderText(
+					'floating',
+					132,
+					368,
+					true,
+					'st3 left-align',
+					data.battery4Energy === 0 || !isFloating4
+						? 'transparent'
+						: battery4Colour,
+					localize('common.battery_floating'),
+				)}
+				${renderText(
+					'battery_soc_184',
+					202,
+					327,
+					!data.inverterProg.show && config.battery4?.shutdown_soc_offgrid,
+					`${config.battery4.hide_soc ? 'st12' : 'st14 left-align'}`,
+					battery4Colour,
+					`${batteryShutdown4}%`,
+				)}
+				${renderText(
+					'battery_soc_184',
+					202,
+					340,
+					!data.inverterProg.show && config.battery4?.shutdown_soc_offgrid,
+					`${config.battery4.hide_soc ? 'st12' : 'st14 left-align'}`,
+					battery4Colour,
+					`${data.shutdownOffGrid4}%`,
+				)}
+				<svg
+					id="Battery4_SOC"
+					style="overflow: visible; 
+                        display: ${
+													config.entities.battery4_soc_184 === 'none' ||
+													!data.stateBattery4Soc.isValid()
+														? 'none'
+														: 'inline'
+												};"
+				>
+					${createTextWithPopup(
+						'battery_soc_184',
+						132,
+						333,
+						config.entities.battery4_soc_184 === 'none' ||
+							!data.stateBattery4Soc.isValid(),
+						'st13 st8 left-align',
+						battery4Colour,
+						!data.inverterProg.show && config.battery4.shutdown_soc_offgrid
+							? config.battery4.hide_soc
+								? data.stateBattery4Soc.toDisplay()
+								: `${data.stateBattery4Soc.toNum(0)}% |`
+							: config.battery4.hide_soc
+								? data.stateBattery4Soc.toDisplay()
+								: `${data.stateBattery4Soc.toNum(0)}%`,
+						(e) => Utils.handlePopup(e, config.entities.battery4_soc_184),
+						true,
+					)}
+				</svg>
+				<svg
+					id="Battery4_SOC_Program_Capacity"
+					style="overflow: visible; 
+                        display: ${
+													config.entities.battery4_soc_184 === 'none' ||
+													!data.stateBattery4Soc.isValid() ||
+													config.battery4.hide_soc ||
+													!data.inverterProg.show
+														? 'none'
+														: 'inline'
+												};"
+				>
+					${createTextWithPopup(
+						'battery_soc_184',
+						132,
+						333,
+						config.entities.battery4_soc_184 === 'none' ||
+							!data.stateBattery4Soc.isValid(),
+						'st13 st8 left-align',
+						battery4Colour,
+						`${data.stateBattery4Soc.toNum(0)}% | ${data.inverterProg.capacity || 0}%`,
+						(e) => Utils.handlePopup(e, config.entities.battery4_soc_184),
+						true,
+					)}
+				</svg>
+				<svg
+					id="Battery4_SOC_Shutdown"
+					style="overflow: visible; 
+                        display: ${
+													config.entities.battery4_soc_184 !== 'none' &&
+													data.stateBattery4Soc.isValid() &&
+													!config.battery4.hide_soc &&
+													!data.inverterProg.show &&
+													config.battery4?.shutdown_soc &&
+													!config.battery4?.shutdown_soc_offgrid
+														? 'inline'
+														: 'none'
+												};"
+				>
+					${createTextWithPopup(
+						'battery_soc_184',
+						132,
+						333,
+						config.entities.battery4_soc_184 === 'none' ||
+							!data.stateBattery4Soc.isValid(),
+						'st13 st8 left-align',
+						battery4Colour,
+						`${data.stateBattery4Soc.toNum(0)}% | ${batteryShutdown4 || 0}%`,
+						(e) => Utils.handlePopup(e, config.entities.battery4_soc_184),
+						true,
+					)}
+				</svg>
+				${renderText(
+					'duration',
+					132,
+					352,
+					true,
+					`${largeFont !== true ? 'st14' : 'st4'} left-align`,
+					data.battery4Energy === 0 || isFloating4 || battery4Power === 0
+						? 'transparent'
+						: battery4Colour,
+					data.batteryDuration4,
+				)}
+				<circle
+					id="bat4"
+					cx="136"
+					cy="377"
+					r="3"
+					display="${
+						config.entities?.battery4_status === 'none' ||
+						!config.entities?.battery4_status
+							? 'none'
+							: ''
+					}"
+					fill="${data.battery4StateColour}"
+				/>
+				<text x="144" y="378" class="st3 left-align" fill="${battery4Colour}">
+					${data.battery4StateMsg}
+				</text>
+			</svg>
 			<svg id="battery1_data" x="${batteryCount === 2 ? '16.25%' : '0%'}">
 				<rect
 					x="6"
@@ -1341,9 +1691,9 @@ export const renderBatteryElements = (
 			<svg
 				id="battery2_data"
 				style="overflow: visible; display: ${
-					batteryCount === 2 ? 'inline' : 'none'
+					batteryCount >= 2 ? 'inline' : 'none'
 				};"
-				x="36%"
+				x="${batteryCount === 2 ? '36%' : '12.25%'}" y="0%"
 			>
 				<rect
 					x="6"
@@ -1407,6 +1757,150 @@ export const renderBatteryElements = (
 						1,
 					)} ${UnitOfElectricalCurrent.AMPERE}`,
 					(e) => Utils.handlePopup(e, config.entities.battery2_current_191),
+					true,
+				)}
+			</svg>
+<svg
+				id="battery3_data"
+				style="overflow: visible; display: ${
+					batteryCount >= 3 ? 'inline' : 'none'
+				};"
+				x="0%" y="90"
+			>
+				<rect
+					x="6"
+					y="320.75"
+					width="40"
+					height="50"
+					rx="4.5"
+					ry="4.5"
+					fill="none"
+					stroke="${battery3Colour}"
+					pointer-events="all"
+				/>
+				${createTextWithPopup(
+					'battery3_voltage_183',
+					25,
+					329.5,
+					config.entities.battery3_voltage_183 === 'none' ||
+						!config.entities.battery3_voltage_183,
+					'st3 st8',
+					battery3Colour,
+					`${Utils.formatNumberLocale(data.battery3Voltage, 1)} ${UnitOfElectricPotential.VOLT}`,
+					(e) => Utils.handlePopup(e, config.entities.battery3_voltage_183),
+					true,
+				)}
+				${createTextWithPopup(
+					'battery3_power_190',
+					25,
+					362,
+					config.entities.battery3_power_190 === 'none',
+					'st3 st8',
+					battery3Colour,
+					config.battery3.auto_scale
+						? `${
+								config.battery3.show_absolute
+									? Utils.convertValue(
+											Math.abs(battery3Power),
+											decimalPlaces,
+										) || '0'
+									: Utils.convertValue(battery3Power, decimalPlaces) || '0'
+							}`
+						: `${
+								config.battery3.show_absolute
+									? `${Math.abs(battery3Power)} ${UnitOfPower.WATT}`
+									: `${battery3Power || 0} ${UnitOfPower.WATT}`
+							}`,
+					(e) => Utils.handlePopup(e, config.entities.battery3_power_190),
+					true,
+				)}
+				${createTextWithPopup(
+					'battery3_current_191',
+					25,
+					345.75,
+					config.entities.battery3_current_191 === 'none' ||
+						!data.stateBattery3Current.isValid(),
+					'st3 st8',
+					battery3Colour,
+					`${Utils.formatNumberLocale(
+						config.battery3.show_absolute
+							? Math.abs(Utils.toNum(data.stateBattery3Current.state, 1))
+							: Utils.toNum(data.stateBattery3Current.state, 1),
+						1,
+					)} ${UnitOfElectricalCurrent.AMPERE}`,
+					(e) => Utils.handlePopup(e, config.entities.battery3_current_191),
+					true,
+				)}
+			</svg>
+<svg
+				id="battery4_data"
+				style="overflow: visible; display: ${
+					batteryCount >= 4 ? 'inline' : 'none'
+				};"
+				x="12.25%" y="90"
+			>
+				<rect
+					x="6"
+					y="320.75"
+					width="40"
+					height="50"
+					rx="4.5"
+					ry="4.5"
+					fill="none"
+					stroke="${battery4Colour}"
+					pointer-events="all"
+				/>
+				${createTextWithPopup(
+					'battery4_voltage_183',
+					25,
+					329.5,
+					config.entities.battery4_voltage_183 === 'none' ||
+						!config.entities.battery4_voltage_183,
+					'st3 st8',
+					battery4Colour,
+					`${Utils.formatNumberLocale(data.battery4Voltage, 1)} ${UnitOfElectricPotential.VOLT}`,
+					(e) => Utils.handlePopup(e, config.entities.battery4_voltage_183),
+					true,
+				)}
+				${createTextWithPopup(
+					'battery4_power_190',
+					25,
+					362,
+					config.entities.battery4_power_190 === 'none',
+					'st3 st8',
+					battery4Colour,
+					config.battery4.auto_scale
+						? `${
+								config.battery4.show_absolute
+									? Utils.convertValue(
+											Math.abs(battery4Power),
+											decimalPlaces,
+										) || '0'
+									: Utils.convertValue(battery4Power, decimalPlaces) || '0'
+							}`
+						: `${
+								config.battery4.show_absolute
+									? `${Math.abs(battery4Power)} ${UnitOfPower.WATT}`
+									: `${battery4Power || 0} ${UnitOfPower.WATT}`
+							}`,
+					(e) => Utils.handlePopup(e, config.entities.battery4_power_190),
+					true,
+				)}
+				${createTextWithPopup(
+					'battery4_current_191',
+					25,
+					345.75,
+					config.entities.battery4_current_191 === 'none' ||
+						!data.stateBattery4Current.isValid(),
+					'st3 st8',
+					battery4Colour,
+					`${Utils.formatNumberLocale(
+						config.battery4.show_absolute
+							? Math.abs(Utils.toNum(data.stateBattery4Current.state, 1))
+							: Utils.toNum(data.stateBattery4Current.state, 1),
+						1,
+					)} ${UnitOfElectricalCurrent.AMPERE}`,
+					(e) => Utils.handlePopup(e, config.entities.battery4_current_191),
 					true,
 				)}
 			</svg>
