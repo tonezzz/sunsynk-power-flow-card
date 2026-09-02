@@ -1259,7 +1259,7 @@ const stateDayBattery4Discharge = this.getEntity(
 		};
 
 		let batteryCount = config.battery?.count;
-		if (!config.wide || (batteryCount !== 1 && batteryCount !== 2)) {
+		if (!config.wide || (batteryCount !== 1 && batteryCount !== 2 && batteryCount !== 3 && batteryCount !== 4)) {
 			batteryCount = 1;
 		}
 
