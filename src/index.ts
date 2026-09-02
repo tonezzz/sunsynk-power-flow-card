@@ -38,6 +38,7 @@ import merge from 'lodash.merge';
 import { Utils } from './helpers/utils';
 import { fullCard } from './cards/full-card';
 import { compactCard } from './cards/compact-card';
+import { test2Card } from './cards/test2-card';
 import { globalData } from './helpers/globals';
 import { InverterFactory } from './inverters/inverter-factory';
 import { BatteryIconManager } from './helpers/battery-icon-manager';
@@ -1848,7 +1849,7 @@ if (battery4Voltage && stateBattery4RatedCapacity.notEmpty()) {
 			batteryColour = batteryColourConfig;
 		}
 
-		let battery2Colour: string;
+		let battery2Colour = battery2ColourConfig;
 		if (
 			config.battery2.invert_flow === true
 				? battery2Power > 0 && !isFloating2
@@ -1856,7 +1857,7 @@ if (battery4Voltage && stateBattery4RatedCapacity.notEmpty()) {
 		) {
 			battery2Colour = battery2ChargeColour;
 		}
-let battery3Colour: string;
+		let battery3Colour = battery3ColourConfig;
 		if (
 			config.battery3.invert_flow === true
 				? battery3Power > 0 && !isFloating3
@@ -1864,15 +1865,13 @@ let battery3Colour: string;
 		) {
 			battery3Colour = battery3ChargeColour;
 		}
-let battery4Colour: string;
+		let battery4Colour = battery4ColourConfig;
 		if (
 			config.battery4.invert_flow === true
 				? battery4Power > 0 && !isFloating4
 				: battery4Power < 0 && !isFloating4
 		) {
 			battery4Colour = battery4ChargeColour;
-		} else {
-			battery2Colour = battery2ColourConfig;
 		}
 
 		//Set Inverter Status Message and dot
@@ -3151,10 +3150,13 @@ const {
 		};
 
 		let template: TemplateResult | null = null;
-		let variantKey: 'full' | 'compact' | undefined;
+		let variantKey: 'full' | 'compact' | 'test2' | undefined;
 		if (this.isFullCard) {
 			variantKey = 'full';
 			template = fullCard(config, inverterImg, data);
+		} else if (this.isTest2Card) {
+			variantKey = 'test2';
+			template = test2Card(config, inverterImg, data);
 		} else if (this.isLiteCard || this.isCompactCard) {
 			variantKey = 'compact';
 			template = compactCard(config, inverterImg, data);
@@ -3293,6 +3295,10 @@ const {
 
 	get isFullCard() {
 		return this._config.cardstyle == CardStyle.Full;
+	}
+
+	get isTest2Card() {
+		return this._config.cardstyle == CardStyle.Test2;
 	}
 
 	colourConvert(colour: string) {

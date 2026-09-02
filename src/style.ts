@@ -13,14 +13,9 @@ export const styles: CSSResultGroup = css`
 
 	.card {
 		border-radius: var(--ha-card-border-radius, 10px);
-		box-shadow: var(
-			--ha-card-box-shadow,
-			0px 0px 0px 1px rgba(0, 0, 0, 0.12),
-			0px 0px 0px 0px rgba(0, 0, 0, 0.12),
-			0px 0px 0px 0px rgba(0, 0, 0, 0.12)
-		);
-		background: var(--ha-card-background, var(--card-background-color, white));
-		border-width: var(--ha-card-border-width);
+		box-shadow: none;
+		background: transparent;
+		border-width: 0;
 		padding: 0px;
 	}
 
