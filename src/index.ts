@@ -399,16 +399,16 @@ export class SunsynkPowerFlowCard extends LitElement {
 		const stateDayBattery2Charge = this.getEntity(
 			'entities.day_battery2_charge_70',
 		);
-const stateDayBattery3Discharge = this.getEntity(
+		const _stateDayBattery3Discharge = this.getEntity(
 			'entities.day_battery3_discharge_71',
 		);
-		const stateDayBattery3Charge = this.getEntity(
+		const _stateDayBattery3Charge = this.getEntity(
 			'entities.day_battery3_charge_70',
 		);
-const stateDayBattery4Discharge = this.getEntity(
+		const _stateDayBattery4Discharge = this.getEntity(
 			'entities.day_battery4_discharge_71',
 		);
-		const stateDayBattery4Charge = this.getEntity(
+		const _stateDayBattery4Charge = this.getEntity(
 			'entities.day_battery4_charge_70',
 		);
 		const stateDayLoadEnergy = this.getEntity('entities.day_load_energy_84');
@@ -566,7 +566,7 @@ const stateDayBattery4Discharge = this.getEntity(
 		const stateBattery3Status = this.getEntity('entities.battery3_status', {
 			state: '',
 		});
-		const stateBattery3CurrentDirection = this.getEntity(
+		const _stateBattery3CurrentDirection = this.getEntity(
 			'entities.battery3_current_direction',
 			{ state: '' },
 		);
@@ -610,7 +610,7 @@ const stateDayBattery4Discharge = this.getEntity(
 		const stateBattery4Status = this.getEntity('entities.battery4_status', {
 			state: '',
 		});
-		const stateBattery4CurrentDirection = this.getEntity(
+		const _stateBattery4CurrentDirection = this.getEntity(
 			'entities.battery4_current_direction',
 			{ state: '' },
 		);
@@ -963,11 +963,6 @@ const stateDayBattery4Discharge = this.getEntity(
 			nonessentialLoads = 0;
 		}
 
-		let pvEfficiencyMode = config.solar?.efficiency;
-		if (!validnonLoadValues.includes(pvEfficiencyMode)) {
-			pvEfficiencyMode = 0;
-		}
-
 		const gridShowDailyBuy = config.grid?.show_daily_buy;
 		const gridShowDailySell = config.grid?.show_daily_sell;
 
@@ -1092,10 +1087,10 @@ const stateDayBattery4Discharge = this.getEntity(
 		let battery2Power = stateBattery2Power.toPower(
 			config.battery2?.invert_power,
 		);
-		let battery3Power = stateBattery3Power.toPower(
+		const battery3Power = stateBattery3Power.toPower(
 			config.battery3?.invert_power,
 		);
-		let battery4Power = stateBattery4Power.toPower(
+		const battery4Power = stateBattery4Power.toPower(
 			config.battery4?.invert_power,
 		);
 
@@ -1267,13 +1262,13 @@ const stateDayBattery4Discharge = this.getEntity(
 		const batteryShutdown = stateShutdownSOC.toNum();
 		const shutdownOffGrid2 =
 			stateShutdownSOCOffGrid2.toNum() || shutdownOffGrid;
-const shutdownOffGrid3 =
+		const shutdownOffGrid3 =
 			stateShutdownSOCOffGrid3.toNum() || shutdownOffGrid;
-const shutdownOffGrid4 =
+		const shutdownOffGrid4 =
 			stateShutdownSOCOffGrid4.toNum() || shutdownOffGrid;
 		const batteryShutdown2 = stateShutdownSOC2.toNum() || batteryShutdown;
-const batteryShutdown3 = stateShutdownSOC3.toNum() || batteryShutdown;
-const batteryShutdown4 = stateShutdownSOC4.toNum() || batteryShutdown;
+		const batteryShutdown3 = stateShutdownSOC3.toNum() || batteryShutdown;
+		const batteryShutdown4 = stateShutdownSOC4.toNum() || batteryShutdown;
 
 		const inverterProg: InverterSettings = {
 			capacity: batteryShutdown,
@@ -1455,8 +1450,8 @@ const batteryShutdown4 = stateShutdownSOC4.toNum() || batteryShutdown;
 		maximumSOC = Math.max(50, Math.min(maximumSOC, 100));
 
 		let maximumSOC2 = stateSOCEndOfCharge2.toNum() || maximumSOC;
-		let maximumSOC3 = stateSOCEndOfCharge3.toNum() || maximumSOC;
-		let maximumSOC4 = stateSOCEndOfCharge4.toNum() || maximumSOC;
+		const maximumSOC3 = stateSOCEndOfCharge3.toNum() || maximumSOC;
+		const maximumSOC4 = stateSOCEndOfCharge4.toNum() || maximumSOC;
 		maximumSOC2 = Math.max(50, Math.min(maximumSOC2, 100));
 
 		const batteryPowerTotal =
@@ -1666,12 +1661,12 @@ const batteryShutdown4 = stateShutdownSOC4.toNum() || batteryShutdown;
 
 		let formattedResultTime = '';
 		let formattedResultTime2 = '';
-		let formattedResultTime3 = '';
-		let formattedResultTime4 = '';
+		const formattedResultTime3 = '';
+		const formattedResultTime4 = '';
 		let batteryDuration = '';
 		let batteryDuration2 = '';
-		let batteryDuration3 = '';
-		let batteryDuration4 = '';
+		const batteryDuration3 = '';
+		const batteryDuration4 = '';
 
 		const battenergy = this.getEntity('battery.energy', {
 			state: config.battery.energy?.toString() ?? '',
@@ -1702,13 +1697,13 @@ const batteryShutdown4 = stateShutdownSOC4.toNum() || batteryShutdown;
 				0,
 			);
 		}
-if (battery3Voltage && stateBattery3RatedCapacity.notEmpty()) {
+		if (battery3Voltage && stateBattery3RatedCapacity.notEmpty()) {
 			battery3Energy = Utils.toNum(
 				battery3Voltage * stateBattery3RatedCapacity.toNum(0),
 				0,
 			);
 		}
-if (battery4Voltage && stateBattery4RatedCapacity.notEmpty()) {
+		if (battery4Voltage && stateBattery4RatedCapacity.notEmpty()) {
 			battery4Energy = Utils.toNum(
 				battery4Voltage * stateBattery4RatedCapacity.toNum(0),
 				0,
@@ -1744,7 +1739,7 @@ if (battery4Voltage && stateBattery4RatedCapacity.notEmpty()) {
 				return 0; // Default case
 			};
 
-			let totalSeconds = 0;
+			let totalSeconds: number;
 			if (batteryEnergy !== 0) {
 				totalSeconds = calculateTotalSeconds(
 					stateBatterySoc,
@@ -1779,7 +1774,7 @@ if (battery4Voltage && stateBattery4RatedCapacity.notEmpty()) {
 				batteryDuration += `${minutes} ${localize('common.min')}`;
 			}
 
-			let totalSeconds2 = 0;
+			let totalSeconds2: number;
 			if (battery2Energy !== 0) {
 				totalSeconds2 = calculateTotalSeconds(
 					stateBattery2Soc,
@@ -1856,7 +1851,7 @@ if (battery4Voltage && stateBattery4RatedCapacity.notEmpty()) {
 		) {
 			battery2Colour = battery2ChargeColour;
 		}
-let battery3Colour: string;
+		let battery3Colour: string;
 		if (
 			config.battery3.invert_flow === true
 				? battery3Power > 0 && !isFloating3
@@ -1864,7 +1859,7 @@ let battery3Colour: string;
 		) {
 			battery3Colour = battery3ChargeColour;
 		}
-let battery4Colour: string;
+		let battery4Colour: string;
 		if (
 			config.battery4.invert_flow === true
 				? battery4Power > 0 && !isFloating4
@@ -1924,8 +1919,8 @@ let battery4Colour: string;
 		let battery2StateMsg = '';
 		let battery1Found = false;
 		let battery2Found = false;
-			let battery3Found = false;
-			let battery4Found = false;
+		let battery3Found = false;
+		let battery4Found = false;
 
 		if (
 			[
@@ -1960,7 +1955,7 @@ let battery4Colour: string;
 						battery2StateMsg = message;
 						battery2Found = true;
 					}
-// Check for stateBattery3Status
+					// Check for stateBattery3Status
 					if (
 						!battery3Found &&
 						states.includes(stateBattery3Status.state.toLowerCase())
@@ -1969,7 +1964,7 @@ let battery4Colour: string;
 						battery3StateMsg = message;
 						battery3Found = true;
 					}
-// Check for stateBattery4Status
+					// Check for stateBattery4Status
 					if (
 						!battery4Found &&
 						states.includes(stateBattery4Status.state.toLowerCase())
@@ -1979,9 +1974,9 @@ let battery4Colour: string;
 						battery4Found = true;
 					}
 
-
 					// Break the loop if both batteries are found
-					if (battery1Found && battery2Found && battery3Found && battery4Found) break;
+					if (battery1Found && battery2Found && battery3Found && battery4Found)
+						break;
 				}
 			}
 
@@ -2012,7 +2007,7 @@ let battery4Colour: string;
 					battery2StateMsg = 'Status';
 				}
 			}
-// Default logic for battery 2
+			// Default logic for battery 2
 			if (!battery3Found) {
 				if (
 					config.entities?.battery3_status === 'none' ||
@@ -2025,7 +2020,7 @@ let battery4Colour: string;
 					battery3StateMsg = 'Status';
 				}
 			}
-// Default logic for battery 2
+			// Default logic for battery 2
 			if (!battery4Found) {
 				if (
 					config.entities?.battery4_status === 'none' ||
@@ -2441,8 +2436,8 @@ let battery4Colour: string;
 
 		//console.log(`${normalizedPvPercentage} % normalizedPVPercentage to load, ${normalizedBatteryPercentage} % normalizedBatteryPercentage to load`);
 
-		let pvPercentage = 0;
-		let batteryPercentage = 0;
+		let pvPercentage: number;
+		let batteryPercentage: number;
 		let gridPercentage = 0;
 		if (totalPercentage > 100) {
 			pvPercentage = Utils.toNum(normalizedPvPercentage, 0);
@@ -2495,8 +2490,8 @@ let battery4Colour: string;
 				? 0
 				: (gridPercentageRawBat / totalPercentageBat) * 100;
 
-		let pvPercentageBat = 0;
-		let gridPercentageBat = 0;
+		let pvPercentageBat: number;
+		let gridPercentageBat: number;
 		if (totalPercentageBat > 100) {
 			pvPercentageBat = Utils.toNum(normalizedPvPercentage_bat, 0);
 			gridPercentageBat = Utils.toNum(normalizedGridPercentage, 0);
@@ -2596,13 +2591,13 @@ let battery4Colour: string;
 			stopColour: stop2Colour,
 			battery0: battery20,
 		} = BatteryIconManager.convert(stateBattery2Soc);
-const {
+		const {
 			batteryIcon: battery3Icon,
 			batteryCharge: battery3Charge,
 			stopColour: stop3Colour,
 			battery0: battery30,
 		} = BatteryIconManager.convert(stateBattery3Soc);
-const {
+		const {
 			batteryIcon: battery4Icon,
 			batteryCharge: battery4Charge,
 			stopColour: stop4Colour,

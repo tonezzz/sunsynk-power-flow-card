@@ -102,9 +102,9 @@ export const renderGridElements = (
 		<!-- Grid Elements -->
 		<svg
 			id="Grid"
-			style="overflow: visible; display: ${!config.show_grid
-				? 'none'
-				: 'inline'};"
+			style="overflow: visible; display: ${
+				!config.show_grid ? 'none' : 'inline'
+			};"
 		>
 			<rect
 				x="103"
@@ -188,17 +188,20 @@ export const renderGridElements = (
 					'#grid-line1',
 				)}
 			</svg>
-			${config.grid?.navigate
-				? svg`
+			${
+				config.grid?.navigate
+					? svg`
                     <a href="#" @click=${(e) => Utils.handleNavigation(e, config.grid.navigate)}>
                         ${renderGridIcons(data, config)}
                     </a>`
-				: svg`
+					: svg`
                     <a href="#" @click=${(e) => Utils.handlePopup(e, config.entities.grid_connected_status_194)}>
                         ${renderGridIcons(data, config)}
-                    </a>`}
-			${config.grid?.navigate
-				? svg`
+                    </a>`
+			}
+			${
+				config.grid?.navigate
+					? svg`
                         <a href="#" @click=${(e) => Utils.handleNavigation(e, config.grid.navigate)}>
                             <g display="${config.show_grid && (config.grid.import_icon || config.grid.disconnected_icon || config.grid.export_icon) ? '' : 'none'}">
                                 <foreignObject x="-0.5" y="187.5" width="70" height="70">
@@ -208,7 +211,7 @@ export const renderGridElements = (
                                 </foreignObject>
                             </g>
                         </a>`
-				: svg`
+					: svg`
                         <a href="#" @click=${(e) => Utils.handlePopup(e, config.entities.grid_connected_status_194)}>
                             <g display="${config.show_grid && (config.grid.import_icon || config.grid.disconnected_icon || config.grid.export_icon) ? '' : 'none'}">
                                 <foreignObject x="-0.5" y="187.5" width="70" height="70">
@@ -217,7 +220,8 @@ export const renderGridElements = (
                                     </div>
                                 </foreignObject>
                             </g>
-                        </a>`}
+                        </a>`
+			}
 			${createTextWithPopup(
 				'daily_grid_buy_value',
 				5,
@@ -257,20 +261,23 @@ export const renderGridElements = (
 				(e) => Utils.handlePopup(e, config.entities.max_sell_power),
 				true,
 			)}
-			${three_phase
-				? config.entities?.grid_ct_power_total
-					? svg`
+			${
+				three_phase
+					? config.entities?.grid_ct_power_total
+						? svg`
                             <a href="#" @click=${(e) => Utils.handlePopup(e, config.entities.grid_ct_power_total)}>
                             ${renderGridTotalPower(data, config)}
                         </a>`
-					: svg`
+						: svg`
                             ${renderGridTotalPower(data, config)}`
-				: svg`
+					: svg`
                     <a href="#" @click=${(e) => Utils.handlePopup(e, config.entities.grid_ct_power_172)}>
                         ${renderGridTotalPower(data, config)}
-                    </a>`}
-			${totalGridPower >= 0
-				? svg`
+                    </a>`
+			}
+			${
+				totalGridPower >= 0
+					? svg`
                     ${createTextWithPopup(
 											'energy_cost',
 											105,
@@ -285,7 +292,7 @@ export const renderGridElements = (
 											(e) =>
 												Utils.handlePopup(e, config.entities.energy_cost_buy),
 										)}}`
-				: svg`
+					: svg`
                     ${createTextWithPopup(
 											'energy_cost',
 											105,
@@ -300,7 +307,8 @@ export const renderGridElements = (
 											(e) =>
 												Utils.handlePopup(e, config.entities.energy_cost_sell),
 											false,
-										)}`}
+										)}`
+			}
 			${createTextWithPopup(
 				'prepaid',
 				31.5,

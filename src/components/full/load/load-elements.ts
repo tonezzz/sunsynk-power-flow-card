@@ -63,11 +63,13 @@ export const renderLoadElements = (
 		>
 			<svg
 				id="es-load5"
-				style="overflow: visible; display: ${[5, 6].includes(additionalLoad)
-					? config.wide || !config.load.show_aux
-						? 'inline'
-						: 'none'
-					: `none`};"
+				style="overflow: visible; display: ${
+					[5, 6].includes(additionalLoad)
+						? config.wide || !config.load.show_aux
+							? 'inline'
+							: 'none'
+						: `none`
+				};"
 				x="${config.wide ? '5%' : '-15.25%'}"
 			>
 				<rect
@@ -130,11 +132,13 @@ export const renderLoadElements = (
 			</svg>
 			<svg
 				id="es-load6"
-				style="overflow: visible; display: ${[6].includes(additionalLoad)
-					? config.wide || !config.load.show_aux
-						? 'inline'
-						: 'none'
-					: `none`};"
+				style="overflow: visible; display: ${
+					[6].includes(additionalLoad)
+						? config.wide || !config.load.show_aux
+							? 'inline'
+							: 'none'
+						: `none`
+				};"
 				x="${config.wide ? '5%' : '-15.25%'}"
 			>
 				<rect
@@ -257,9 +261,9 @@ export const renderLoadElements = (
 				fill="none"
 				stroke="${dynamicColourEssentialLoad3}"
 				pointer-events="all"
-				display="${!showAux && [3, 4, 5, 6].includes(additionalLoad)
-					? ''
-					: 'none'}"
+				display="${
+					!showAux && [3, 4, 5, 6].includes(additionalLoad) ? '' : 'none'
+				}"
 			/>
 			<rect
 				id="es-load4"
@@ -272,9 +276,9 @@ export const renderLoadElements = (
 				fill="none"
 				stroke="${dynamicColourEssentialLoad4}"
 				pointer-events="all"
-				display="${!showAux && [3, 4, 5, 6].includes(additionalLoad)
-					? ''
-					: 'none'}"
+				display="${
+					!showAux && [3, 4, 5, 6].includes(additionalLoad) ? '' : 'none'
+				}"
 			/>
 
 			${renderText(
@@ -505,31 +509,35 @@ export const renderLoadElements = (
 						<linearGradient id="Lg-essen_aux" x1="0%" x2="0%" y1="100%" y2="0%">
 							<stop
 								offset="0%"
-								stop-color="${data.gridPercentage > 0
-									? gridColour
-									: data.batteryPercentage > 0
-										? batteryColour
-										: solarColour}"
+								stop-color="${
+									data.gridPercentage > 0
+										? gridColour
+										: data.batteryPercentage > 0
+											? batteryColour
+											: solarColour
+								}"
 							/>
 							<stop
 								offset="${data.gridPercentage}%"
-								stop-color="${data.gridPercentage > 0
-									? gridColour
-									: data.batteryPercentage > 0
-										? batteryColour
-										: solarColour}"
+								stop-color="${
+									data.gridPercentage > 0
+										? gridColour
+										: data.batteryPercentage > 0
+											? batteryColour
+											: solarColour
+								}"
 							/>
 							<stop
 								offset="${data.gridPercentage}%"
-								stop-color="${data.batteryPercentage > 0
-									? batteryColour
-									: solarColour}"
+								stop-color="${
+									data.batteryPercentage > 0 ? batteryColour : solarColour
+								}"
 							/>
 							<stop
 								offset="${data.gridPercentage + data.batteryPercentage}%"
-								stop-color="${data.batteryPercentage > 0
-									? batteryColour
-									: solarColour}"
+								stop-color="${
+									data.batteryPercentage > 0 ? batteryColour : solarColour
+								}"
 							/>
 							<stop
 								offset="${data.gridPercentage + data.batteryPercentage}%"
@@ -539,9 +547,9 @@ export const renderLoadElements = (
 						</linearGradient>
 					</defs>
 					<path
-						display="${[1, 2].includes(additionalLoad) && !showAux
-							? ''
-							: 'none'}"
+						display="${
+							[1, 2].includes(additionalLoad) && !showAux ? '' : 'none'
+						}"
 						fill="${dynamic_colour ? `url(#Lg-essen_aux)` : loadColour}"
 						d="${data.essIcon}"
 					/>
@@ -565,31 +573,35 @@ export const renderLoadElements = (
 						>
 							<stop
 								offset="0%"
-								stop-color="${data.gridPercentage > 0
-									? gridColour
-									: data.batteryPercentage > 0
-										? batteryColour
-										: solarColour}"
+								stop-color="${
+									data.gridPercentage > 0
+										? gridColour
+										: data.batteryPercentage > 0
+											? batteryColour
+											: solarColour
+								}"
 							/>
 							<stop
 								offset="${data.gridPercentage}%"
-								stop-color="${data.gridPercentage > 0
-									? gridColour
-									: data.batteryPercentage > 0
-										? batteryColour
-										: solarColour}"
+								stop-color="${
+									data.gridPercentage > 0
+										? gridColour
+										: data.batteryPercentage > 0
+											? batteryColour
+											: solarColour
+								}"
 							/>
 							<stop
 								offset="${data.gridPercentage}%"
-								stop-color="${data.batteryPercentage > 0
-									? batteryColour
-									: solarColour}"
+								stop-color="${
+									data.batteryPercentage > 0 ? batteryColour : solarColour
+								}"
 							/>
 							<stop
 								offset="${data.gridPercentage + data.batteryPercentage}%"
-								stop-color="${data.batteryPercentage > 0
-									? batteryColour
-									: solarColour}"
+								stop-color="${
+									data.batteryPercentage > 0 ? batteryColour : solarColour
+								}"
 							/>
 							<stop
 								offset="${data.gridPercentage + data.batteryPercentage}%"
@@ -599,9 +611,9 @@ export const renderLoadElements = (
 						</linearGradient>
 					</defs>
 					<path
-						display="${[1, 2].includes(additionalLoad) && showAux
-							? ''
-							: 'none'}"
+						display="${
+							[1, 2].includes(additionalLoad) && showAux ? '' : 'none'
+						}"
 						fill="${dynamic_colour ? `url(#Lg-essen_noaux)` : loadColour}"
 						d="${data.essIcon}"
 					/>
@@ -625,31 +637,35 @@ export const renderLoadElements = (
 						>
 							<stop
 								offset="0%"
-								stop-color="${data.gridPercentage > 0
-									? gridColour
-									: data.batteryPercentage > 0
-										? batteryColour
-										: solarColour}"
+								stop-color="${
+									data.gridPercentage > 0
+										? gridColour
+										: data.batteryPercentage > 0
+											? batteryColour
+											: solarColour
+								}"
 							/>
 							<stop
 								offset="${data.gridPercentage}%"
-								stop-color="${data.gridPercentage > 0
-									? gridColour
-									: data.batteryPercentage > 0
-										? batteryColour
-										: solarColour}"
+								stop-color="${
+									data.gridPercentage > 0
+										? gridColour
+										: data.batteryPercentage > 0
+											? batteryColour
+											: solarColour
+								}"
 							/>
 							<stop
 								offset="${data.gridPercentage}%"
-								stop-color="${data.batteryPercentage > 0
-									? batteryColour
-									: solarColour}"
+								stop-color="${
+									data.batteryPercentage > 0 ? batteryColour : solarColour
+								}"
 							/>
 							<stop
 								offset="${data.gridPercentage + data.batteryPercentage}%"
-								stop-color="${data.batteryPercentage > 0
-									? batteryColour
-									: solarColour}"
+								stop-color="${
+									data.batteryPercentage > 0 ? batteryColour : solarColour
+								}"
 							/>
 							<stop
 								offset="${data.gridPercentage + data.batteryPercentage}%"
@@ -659,9 +675,9 @@ export const renderLoadElements = (
 						</linearGradient>
 					</defs>
 					<path
-						display="${[4, 5, 6].includes(additionalLoad) && !showAux
-							? ''
-							: 'none'}"
+						display="${
+							[4, 5, 6].includes(additionalLoad) && !showAux ? '' : 'none'
+						}"
 						fill="${dynamic_colour ? `url(#Lg-essen_noaux_four)` : loadColour}"
 						d="${data.essIcon}"
 					/>
@@ -685,31 +701,35 @@ export const renderLoadElements = (
 						>
 							<stop
 								offset="0%"
-								stop-color="${data.gridPercentage > 0
-									? gridColour
-									: data.batteryPercentage > 0
-										? batteryColour
-										: solarColour}"
+								stop-color="${
+									data.gridPercentage > 0
+										? gridColour
+										: data.batteryPercentage > 0
+											? batteryColour
+											: solarColour
+								}"
 							/>
 							<stop
 								offset="${data.gridPercentage}%"
-								stop-color="${data.gridPercentage > 0
-									? gridColour
-									: data.batteryPercentage > 0
-										? batteryColour
-										: solarColour}"
+								stop-color="${
+									data.gridPercentage > 0
+										? gridColour
+										: data.batteryPercentage > 0
+											? batteryColour
+											: solarColour
+								}"
 							/>
 							<stop
 								offset="${data.gridPercentage}%"
-								stop-color="${data.batteryPercentage > 0
-									? batteryColour
-									: solarColour}"
+								stop-color="${
+									data.batteryPercentage > 0 ? batteryColour : solarColour
+								}"
 							/>
 							<stop
 								offset="${data.gridPercentage + data.batteryPercentage}%"
-								stop-color="${data.batteryPercentage > 0
-									? batteryColour
-									: solarColour}"
+								stop-color="${
+									data.batteryPercentage > 0 ? batteryColour : solarColour
+								}"
 							/>
 							<stop
 								offset="${data.gridPercentage + data.batteryPercentage}%"
@@ -719,9 +739,9 @@ export const renderLoadElements = (
 						</linearGradient>
 					</defs>
 					<path
-						display="${[1, 2, 3, 4, 5, 6].includes(additionalLoad)
-							? 'none'
-							: ''}"
+						display="${
+							[1, 2, 3, 4, 5, 6].includes(additionalLoad) ? 'none' : ''
+						}"
 						fill="${dynamic_colour ? `url(#Lg-essen_default)` : loadColour}"
 						d="${data.essIcon}"
 					/>
@@ -887,9 +907,10 @@ export const renderLoadElements = (
 				)} ${data.stateEssentialLoad2Extra?.getUOM()}`,
 				(e) => Utils.handlePopup(e, config.entities.essential_load2_extra),
 			)}
-			${config.entities?.essential_power &&
-			config.entities.essential_power !== 'none'
-				? svg`
+			${
+				config.entities?.essential_power &&
+				config.entities.essential_power !== 'none'
+					? svg`
                     ${createTextWithPopup(
 											'ess_power',
 											270,
@@ -904,7 +925,7 @@ export const renderLoadElements = (
 												Utils.handlePopup(e, config.entities.essential_power),
 											false,
 										)}`
-				: svg`
+					: svg`
                     ${renderText(
 											'ess_power',
 											270,
@@ -916,7 +937,8 @@ export const renderLoadElements = (
 												? `${Utils.convertValue(essentialPower, decimalPlaces) || 0}`
 												: `${essentialPower || 0} ${UnitOfPower.WATT}`,
 											false,
-										)}`}
+										)}`
+			}
 			${createTextWithPopup(
 				'ess_load1_value',
 				409,

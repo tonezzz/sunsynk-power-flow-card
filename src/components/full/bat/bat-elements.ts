@@ -27,16 +27,16 @@ export const renderBatteryElements = (
 		decimalPlaces,
 		batteryPower,
 		battery2Power,
-		battery3Power,
-		battery4Power,
+		_battery3Power,
+		_battery4Power,
 		isFloating,
 		isFloating2,
-		isFloating3,
-		isFloating4,
+		_isFloating3,
+		_isFloating4,
 		batteryShutdown,
 		batteryShutdown2,
-		batteryShutdown3,
-		batteryShutdown4,
+		_batteryShutdown3,
+		_batteryShutdown4,
 	} = data;
 
 	const { auto_scale, show_absolute } = config.battery;

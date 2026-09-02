@@ -41,7 +41,7 @@ export class Utils {
 		const langFromHass: string | undefined =
 			hass?.selectedLanguage || hass?.locale?.language || hass?.language;
 
-		let locale: string | undefined = undefined;
+		let locale: string | undefined;
 		let useGrouping = true;
 
 		switch (nf) {

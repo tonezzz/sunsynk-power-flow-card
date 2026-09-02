@@ -10,13 +10,7 @@ export interface AuxIconConfig {
 	displayCondition: boolean;
 	opacityCondition: boolean;
 	iconType:
-		| 'boiler'
-		| 'aircon'
-		| 'pump'
-		| 'oven'
-		| 'generator'
-		| 'inverter'
-		| 'aux';
+		'boiler' | 'aircon' | 'pump' | 'oven' | 'generator' | 'inverter' | 'aux';
 	prefix: string;
 	dynamicColor: string;
 	viewBoxSize: number;

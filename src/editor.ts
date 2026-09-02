@@ -962,7 +962,9 @@ export class SunSynkCardEditor
 														],
 													},
 												]
-											: []),...(Number(this._config.battery?.count ?? 1) === 3 ? [
+											: []),
+										...(Number(this._config.battery?.count ?? 1) === 3
+											? [
 													{
 														type: 'expandable',
 														title: this._title('bat3'),
@@ -1082,8 +1084,10 @@ export class SunSynkCardEditor
 															},
 														],
 													},
-												] : []),
-...(Number(this._config.battery?.count ?? 1) === 4 ? [
+												]
+											: []),
+										...(Number(this._config.battery?.count ?? 1) === 4
+											? [
 													{
 														type: 'expandable',
 														title: this._title('bat4'),
@@ -1203,8 +1207,8 @@ export class SunSynkCardEditor
 															},
 														],
 													},
-												] : []),
-
+												]
+											: []),
 									],
 								},
 							]
@@ -1805,7 +1809,9 @@ export class SunSynkCardEditor
 													],
 												},
 											]
-										: []),...(Number(this._config.battery?.count ?? 1) === 3 ? [
+										: []),
+									...(Number(this._config.battery?.count ?? 1) === 3
+										? [
 												{
 													type: 'expandable',
 													title: this._title('bat3'),
@@ -1875,8 +1881,10 @@ export class SunSynkCardEditor
 														},
 													],
 												},
-											] : []),
-...(Number(this._config.battery?.count ?? 1) === 4 ? [
+											]
+										: []),
+									...(Number(this._config.battery?.count ?? 1) === 4
+										? [
 												{
 													type: 'expandable',
 													title: this._title('bat4'),
@@ -1946,8 +1954,8 @@ export class SunSynkCardEditor
 														},
 													],
 												},
-											] : []),
-
+											]
+										: []),
 								],
 							},
 							{
@@ -2352,7 +2360,7 @@ export class SunSynkCardEditor
 			case 'three_phase': {
 				const on = Boolean(
 					cfg?.inverter &&
-						(cfg.inverter as Record<string, unknown>).three_phase,
+					(cfg.inverter as Record<string, unknown>).three_phase,
 				);
 				const v = on ? '3P' : '1P';
 				return `${base} (${v})`;

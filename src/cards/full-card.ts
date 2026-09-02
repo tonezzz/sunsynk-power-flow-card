@@ -23,8 +23,9 @@ export const fullCard = (
 				keyed(
 					titleKey,
 					html`<h1
-						style="text-align: center; color: ${config.title_colour ||
-						'inherit'}; font-size: ${config.title_size || '32px'};"
+						style="text-align: center; color: ${
+							config.title_colour || 'inherit'
+						}; font-size: ${config.title_size || '32px'};"
 					>
 						${config.title}
 					</h1>`,
