@@ -1,4 +1,3 @@
-import typescript from 'rollup-plugin-typescript2';
 import commonjs from '@rollup/plugin-commonjs';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import babel from '@rollup/plugin-babel';
@@ -11,15 +10,17 @@ const plugins = [
   nodeResolve({
     jsnext: true,
     main: true,
+    browser: true,
+    preferBuiltins: false,
+    extensions: ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.json'],
   }),
   commonjs(),
-  typescript(),
   json(),
   babel({
     exclude: 'node_modules/**',
     babelHelpers: 'bundled',
     compact: true,
-    extensions: ['.js', '.ts'],
+    extensions: ['.ts', '.tsx', '.js', '.jsx'],
     presets: [
       [
         '@babel/env',
@@ -28,6 +29,7 @@ const plugins = [
           targets: '> 2.5%, not dead',
         },
       ],
+      ['@babel/preset-typescript'],
     ],
     plugins: [
       [
