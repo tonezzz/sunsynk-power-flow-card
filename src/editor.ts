@@ -475,6 +475,14 @@ export class SunSynkCardEditor
 			c.battery2 as Record<string, unknown>,
 			['colour', 'charge_colour'],
 		);
+		copy.battery3 = this._convertSectionColours(
+			c.battery3 as Record<string, unknown>,
+			['colour', 'charge_colour'],
+		);
+		copy.battery4 = this._convertSectionColours(
+			c.battery4 as Record<string, unknown>,
+			['colour', 'charge_colour'],
+		);
 		copy.load = this._convertSectionColours(c.load as Record<string, unknown>, [
 			'colour',
 			'off_colour',
@@ -954,7 +962,249 @@ export class SunSynkCardEditor
 														],
 													},
 												]
-											: []),
+											: []),...(Number(this._config.battery?.count ?? 1) === 3 ? [
+													{
+														type: 'expandable',
+														title: this._title('bat3'),
+														schema: [
+															{
+																name: 'battery3',
+																type: 'grid',
+																schema: [
+																	{
+																		name: 'energy',
+																		selector: { number: { min: 0 } },
+																	},
+																	{
+																		name: 'shutdown_soc',
+																		selector: {
+																			number: { mode: 'box', min: 0, max: 100 },
+																		},
+																	},
+																	{
+																		name: 'shutdown_soc_offgrid',
+																		selector: {
+																			number: { mode: 'box', min: 0, max: 100 },
+																		},
+																	},
+																	{
+																		name: 'soc_end_of_charge',
+																		selector: {
+																			number: {
+																				mode: 'box',
+																				min: 80,
+																				max: 100,
+																			},
+																		},
+																	},
+																	{
+																		name: 'soc_decimal_places',
+																		selector: { number: {} },
+																	},
+																	{
+																		name: 'auto_scale',
+																		selector: { boolean: {} },
+																	},
+																	{
+																		name: 'invert_power',
+																		selector: { boolean: {} },
+																	},
+																	{
+																		name: 'show_absolute',
+																		selector: { boolean: {} },
+																	},
+																	{
+																		name: 'colour',
+																		selector: { color_rgb: {} },
+																	},
+																	{
+																		name: 'charge_colour',
+																		selector: { color_rgb: {} },
+																	},
+																	{
+																		name: 'dynamic_colour',
+																		selector: { boolean: {} },
+																	},
+																	{
+																		name: 'linear_gradient',
+																		selector: { boolean: {} },
+																	},
+																	{
+																		name: 'animate',
+																		selector: { boolean: {} },
+																	},
+																	{
+																		name: 'hide_soc',
+																		selector: { boolean: {} },
+																	},
+																	{
+																		name: 'show_remaining_energy',
+																		selector: { boolean: {} },
+																	},
+																	{
+																		name: 'remaining_energy_to_shutdown',
+																		selector: { boolean: {} },
+																	},
+																	{ name: 'navigate', selector: { text: {} } },
+																	{
+																		name: 'invert_flow',
+																		selector: { boolean: {} },
+																	},
+																],
+															},
+															{
+																type: 'expandable',
+																title: this._title('sensor'),
+																schema: [
+																	{
+																		name: 'battery3',
+																		type: 'grid',
+																		schema: [
+																			{
+																				name: 'energy',
+																				selector: { entity: {} },
+																			},
+																			{
+																				name: 'shutdown_soc',
+																				selector: { entity: {} },
+																			},
+																			{
+																				name: 'shutdown_soc_offgrid',
+																				selector: { entity: {} },
+																			},
+																			{
+																				name: 'soc_end_of_charge',
+																				selector: { entity: {} },
+																			},
+																		],
+																	},
+																],
+															},
+														],
+													},
+												] : []),
+...(Number(this._config.battery?.count ?? 1) === 4 ? [
+													{
+														type: 'expandable',
+														title: this._title('bat4'),
+														schema: [
+															{
+																name: 'battery4',
+																type: 'grid',
+																schema: [
+																	{
+																		name: 'energy',
+																		selector: { number: { min: 0 } },
+																	},
+																	{
+																		name: 'shutdown_soc',
+																		selector: {
+																			number: { mode: 'box', min: 0, max: 100 },
+																		},
+																	},
+																	{
+																		name: 'shutdown_soc_offgrid',
+																		selector: {
+																			number: { mode: 'box', min: 0, max: 100 },
+																		},
+																	},
+																	{
+																		name: 'soc_end_of_charge',
+																		selector: {
+																			number: {
+																				mode: 'box',
+																				min: 80,
+																				max: 100,
+																			},
+																		},
+																	},
+																	{
+																		name: 'soc_decimal_places',
+																		selector: { number: {} },
+																	},
+																	{
+																		name: 'auto_scale',
+																		selector: { boolean: {} },
+																	},
+																	{
+																		name: 'invert_power',
+																		selector: { boolean: {} },
+																	},
+																	{
+																		name: 'show_absolute',
+																		selector: { boolean: {} },
+																	},
+																	{
+																		name: 'colour',
+																		selector: { color_rgb: {} },
+																	},
+																	{
+																		name: 'charge_colour',
+																		selector: { color_rgb: {} },
+																	},
+																	{
+																		name: 'dynamic_colour',
+																		selector: { boolean: {} },
+																	},
+																	{
+																		name: 'linear_gradient',
+																		selector: { boolean: {} },
+																	},
+																	{
+																		name: 'animate',
+																		selector: { boolean: {} },
+																	},
+																	{
+																		name: 'hide_soc',
+																		selector: { boolean: {} },
+																	},
+																	{
+																		name: 'show_remaining_energy',
+																		selector: { boolean: {} },
+																	},
+																	{
+																		name: 'remaining_energy_to_shutdown',
+																		selector: { boolean: {} },
+																	},
+																	{ name: 'navigate', selector: { text: {} } },
+																	{
+																		name: 'invert_flow',
+																		selector: { boolean: {} },
+																	},
+																],
+															},
+															{
+																type: 'expandable',
+																title: this._title('sensor'),
+																schema: [
+																	{
+																		name: 'battery4',
+																		type: 'grid',
+																		schema: [
+																			{
+																				name: 'energy',
+																				selector: { entity: {} },
+																			},
+																			{
+																				name: 'shutdown_soc',
+																				selector: { entity: {} },
+																			},
+																			{
+																				name: 'shutdown_soc_offgrid',
+																				selector: { entity: {} },
+																			},
+																			{
+																				name: 'soc_end_of_charge',
+																				selector: { entity: {} },
+																			},
+																		],
+																	},
+																],
+															},
+														],
+													},
+												] : []),
+
 									],
 								},
 							]
@@ -1555,7 +1805,149 @@ export class SunSynkCardEditor
 													],
 												},
 											]
-										: []),
+										: []),...(Number(this._config.battery?.count ?? 1) === 3 ? [
+												{
+													type: 'expandable',
+													title: this._title('bat3'),
+													schema: [
+														{
+															name: 'entities',
+															type: 'grid',
+															schema: [
+																{
+																	name: 'battery3_power_190',
+																	selector: {
+																		entity: {
+																			device_class: SensorDeviceClass.POWER,
+																		},
+																	},
+																},
+																{
+																	name: 'battery3_current_191',
+																	selector: {
+																		entity: {
+																			device_class: SensorDeviceClass.CURRENT,
+																		},
+																	},
+																},
+																{
+																	name: 'battery3_temp_182',
+																	selector: {
+																		entity: {
+																			device_class:
+																				SensorDeviceClass.TEMPERATURE,
+																		},
+																	},
+																},
+																{
+																	name: 'battery3_voltage_183',
+																	selector: {
+																		entity: {
+																			device_class: SensorDeviceClass.VOLTAGE,
+																		},
+																	},
+																},
+																{
+																	name: 'battery3_soc_184',
+																	selector: {
+																		entity: {
+																			device_class: SensorDeviceClass.BATTERY,
+																		},
+																	},
+																},
+																{
+																	name: 'battery3_rated_capacity',
+																	selector: { entity: {} },
+																},
+																{
+																	name: 'battery3_soh',
+																	selector: { entity: {} },
+																},
+																{
+																	name: 'battery3_current_direction',
+																	selector: { entity: {} },
+																},
+																{
+																	name: 'battery3_status',
+																	selector: { entity: {} },
+																},
+															],
+														},
+													],
+												},
+											] : []),
+...(Number(this._config.battery?.count ?? 1) === 4 ? [
+												{
+													type: 'expandable',
+													title: this._title('bat4'),
+													schema: [
+														{
+															name: 'entities',
+															type: 'grid',
+															schema: [
+																{
+																	name: 'battery4_power_190',
+																	selector: {
+																		entity: {
+																			device_class: SensorDeviceClass.POWER,
+																		},
+																	},
+																},
+																{
+																	name: 'battery4_current_191',
+																	selector: {
+																		entity: {
+																			device_class: SensorDeviceClass.CURRENT,
+																		},
+																	},
+																},
+																{
+																	name: 'battery4_temp_182',
+																	selector: {
+																		entity: {
+																			device_class:
+																				SensorDeviceClass.TEMPERATURE,
+																		},
+																	},
+																},
+																{
+																	name: 'battery4_voltage_183',
+																	selector: {
+																		entity: {
+																			device_class: SensorDeviceClass.VOLTAGE,
+																		},
+																	},
+																},
+																{
+																	name: 'battery4_soc_184',
+																	selector: {
+																		entity: {
+																			device_class: SensorDeviceClass.BATTERY,
+																		},
+																	},
+																},
+																{
+																	name: 'battery4_rated_capacity',
+																	selector: { entity: {} },
+																},
+																{
+																	name: 'battery4_soh',
+																	selector: { entity: {} },
+																},
+																{
+																	name: 'battery4_current_direction',
+																	selector: { entity: {} },
+																},
+																{
+																	name: 'battery4_status',
+																	selector: { entity: {} },
+																},
+															],
+														},
+													],
+												},
+											] : []),
+
 								],
 							},
 							{
