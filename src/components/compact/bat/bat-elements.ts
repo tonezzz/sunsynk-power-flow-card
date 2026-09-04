@@ -694,7 +694,7 @@ export const renderBatteryElements = (
 							? 'inline'
 							: 'none'
 					};"
-					x="-6.5%"
+					x="${batteryCount === 4 ? '-6.5%' : '19%'}"
 					y="0"
 				>
 					<rect
@@ -818,8 +818,8 @@ export const renderBatteryElements = (
 							? 'inline'
 							: 'none'
 					};"
-					x="19%"
-					y="0"
+					x="${batteryCount === 4 ? '19%' : '-6.5%'}"
+					y="${batteryCount === 4 ? '0' : '95'}"
 				>
 					<rect
 						x="159"
@@ -1240,6 +1240,7 @@ export const renderBatteryElements = (
 					style="overflow: visible; display: ${
 						config.wide &&
 						(batteryCount === 2 || batteryCount === 3 || batteryCount === 4) &&
+						batteryCount !== 4 &&
 						!compactMode
 							? 'inline'
 							: 'none'
@@ -1418,7 +1419,8 @@ export const renderBatteryElements = (
 							? 'inline'
 							: 'none'
 					};"
-					x="12%"
+					x="${batteryCount === 4 ? '-43.5%' : '12%'}"
+					y="0"
 				>
 					${renderText(
 						'duration',
@@ -1584,8 +1586,8 @@ export const renderBatteryElements = (
 							? 'inline'
 							: 'none'
 					};"
-					x="-43.5%"
-					y="95"
+					x="${batteryCount === 4 ? '12%' : '-43.5%'}"
+					y="${batteryCount === 4 ? '0' : '95'}"
 				>
 					${renderText(
 						'duration',
@@ -1749,7 +1751,7 @@ export const renderBatteryElements = (
 							? 'inline'
 							: 'none'
 					};"
-					x="12%"
+					x="-43.5%"
 					y="95"
 				>
 					${renderText(
@@ -2832,7 +2834,7 @@ export const renderBatteryElements = (
 							? 'inline'
 							: 'none'
 					};"
-					x="0.75%"
+					x="${batteryCount === 4 ? '-6.25%' : '0.75%'}"
 				>
 					${createTextWithPopup(
 						'battery2_temp_182',
@@ -3017,8 +3019,8 @@ export const renderBatteryElements = (
 							? 'inline'
 							: 'none'
 					};"
-					x="-6.25%"
-					y="95"
+					x="${batteryCount === 4 ? '0.75%' : '-6.25%'}"
+					y="${batteryCount === 4 ? '0' : '95'}"
 				>
 					${createTextWithPopup(
 						'battery3_temp_182',
@@ -3192,7 +3194,7 @@ export const renderBatteryElements = (
 					style="overflow: visible; display: ${
 						config.wide && batteryCount === 4 ? 'inline' : 'none'
 					};"
-					x="0.75%"
+					x="-6.25%"
 					y="95"
 				>
 					${createTextWithPopup(
