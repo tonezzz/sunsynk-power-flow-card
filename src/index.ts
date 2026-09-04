@@ -42,6 +42,7 @@ import { test2Card } from './cards/test2-card';
 import { ss2Card } from './cards/ss2-card';
 import { ss3Card } from './cards/ss3-card';
 import { ss4Card } from './cards/ss4-card';
+import { pfgCard } from './cards/pfg-card';
 import { globalData } from './helpers/globals';
 import { InverterFactory } from './inverters/inverter-factory';
 import { BatteryIconManager } from './helpers/battery-icon-manager';
@@ -397,6 +398,37 @@ export class SunsynkPowerFlowCard extends LitElement {
 			this._trackedEntityIds.clear();
 			globalData.hass = this.hass;
 			const config = this._config;
+
+			// Helper: convert a battery current-direction entity to a signed direction.
+			// Returns +1 when discharging, -1 when charging, and null when unknown.
+			const getBatteryDirection = (state: CustomEntity): number | null => {
+				const raw = state?.toString()?.toLowerCase().trim();
+				if (
+					!raw ||
+					raw === 'unknown' ||
+					raw === 'unavailable' ||
+					raw === 'none'
+				) {
+					return null;
+				}
+				if (
+					raw === 'discharging' ||
+					raw === 'discharge' ||
+					raw.includes('discharg') ||
+					raw === 'empty'
+				) {
+					return 1;
+				}
+				if (
+					raw === 'charging' ||
+					raw === 'charge' ||
+					raw.includes('charg') ||
+					raw === 'full'
+				) {
+					return -1;
+				}
+				return null;
+			};
 
 			//Energy
 			const stateDayBatteryDischarge = this.getEntity(
@@ -793,12 +825,18 @@ export class SunsynkPowerFlowCard extends LitElement {
 			const gridVoltage = !stateGridVoltage.isNaN()
 				? stateGridVoltage.toNum(0)
 				: null;
-			const batteryCurrentDirection = !stateBatteryCurrentDirection.isNaN()
-				? stateBatteryCurrentDirection.toNum(0)
-				: null;
-			const battery2CurrentDirection = !stateBattery2CurrentDirection.isNaN()
-				? stateBattery2CurrentDirection.toNum(0)
-				: null;
+			const batteryCurrentDirection = getBatteryDirection(
+				stateBatteryCurrentDirection,
+			);
+			const battery2CurrentDirection = getBatteryDirection(
+				stateBattery2CurrentDirection,
+			);
+			const battery3CurrentDirection = getBatteryDirection(
+				_stateBattery3CurrentDirection,
+			);
+			const battery4CurrentDirection = getBatteryDirection(
+				_stateBattery4CurrentDirection,
+			);
 			const genericInverterImage = config.inverter?.modern;
 
 			const decimalPlaces = config.decimal_places;
@@ -1122,10 +1160,10 @@ export class SunsynkPowerFlowCard extends LitElement {
 			let battery2Power = stateBattery2Power.toPower(
 				config.battery2?.invert_power,
 			);
-			const battery3Power = stateBattery3Power.toPower(
+			let battery3Power = stateBattery3Power.toPower(
 				config.battery3?.invert_power,
 			);
-			const battery4Power = stateBattery4Power.toPower(
+			let battery4Power = stateBattery4Power.toPower(
 				config.battery4?.invert_power,
 			);
 
@@ -1472,22 +1510,19 @@ export class SunsynkPowerFlowCard extends LitElement {
 				gridStatus = gridVoltage > 50 ? 'on' : 'off';
 			}
 
-			if (batteryCurrentDirection != null) {
-				if (
-					inverterModel == InverterModel.Solis &&
-					batteryCurrentDirection === 0
-				) {
-					batteryPower = -batteryPower;
-				}
+			// Apply explicit current-direction entity if available. +1 means discharging
+			// (which the card represents as positive power), -1 means charging.
+			if (batteryCurrentDirection !== null && batteryPower !== 0) {
+				batteryPower = Math.abs(batteryPower) * batteryCurrentDirection;
 			}
-
-			if (battery2CurrentDirection != null) {
-				if (
-					inverterModel == InverterModel.Solis &&
-					battery2CurrentDirection === 0
-				) {
-					battery2Power = -battery2Power;
-				}
+			if (battery2CurrentDirection !== null && battery2Power !== 0) {
+				battery2Power = Math.abs(battery2Power) * battery2CurrentDirection;
+			}
+			if (battery3CurrentDirection !== null && battery3Power !== 0) {
+				battery3Power = Math.abs(battery3Power) * battery3CurrentDirection;
+			}
+			if (battery4CurrentDirection !== null && battery4Power !== 0) {
+				battery4Power = Math.abs(battery4Power) * battery4CurrentDirection;
 			}
 
 			let maximumSOC = stateSOCEndOfCharge.toNum();
@@ -3273,7 +3308,14 @@ export class SunsynkPowerFlowCard extends LitElement {
 
 			let template: TemplateResult | null = null;
 			let variantKey:
-				'full' | 'compact' | 'test2' | 'ss2' | 'ss3' | 'ss4' | undefined;
+				| 'full'
+				| 'compact'
+				| 'test2'
+				| 'ss2'
+				| 'ss3'
+				| 'ss4'
+				| 'pfg'
+				| undefined;
 			if (this.isFullCard) {
 				variantKey = 'full';
 				template = fullCard(config, inverterImg, data);
@@ -3289,6 +3331,9 @@ export class SunsynkPowerFlowCard extends LitElement {
 			} else if (this.isSs4Card) {
 				variantKey = 'ss4';
 				template = ss4Card(config, inverterImg, data);
+			} else if (this.isPfgCard) {
+				variantKey = 'pfg';
+				template = pfgCard(config, inverterImg, data);
 			} else if (this.isLiteCard || this.isCompactCard) {
 				variantKey = 'compact';
 				template = compactCard(config, inverterImg, data);
@@ -3447,6 +3492,10 @@ export class SunsynkPowerFlowCard extends LitElement {
 
 	get isSs4Card() {
 		return this._config.cardstyle == CardStyle.Ss4;
+	}
+
+	get isPfgCard() {
+		return this._config.cardstyle == CardStyle.Pfg;
 	}
 
 	colourConvert(colour: string) {

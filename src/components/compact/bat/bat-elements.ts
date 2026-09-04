@@ -142,7 +142,7 @@ export const renderBatteryElements = (
 						true,
 						`${largeFont !== true ? 'st14' : 'st4'} st8`,
 						batteryColour,
-						`${Utils.formatNumberLocale(data.batteryVoltage, 1)} ${UnitOfElectricPotential.VOLT} ${Utils.formatNumberLocale(show_absolute ? Math.abs(Utils.toNum(data.stateBatteryCurrent.state, 1)) : Utils.toNum(data.stateBatteryCurrent.state, 1), 1)} ${UnitOfElectricalCurrent.AMPERE}`,
+						`${Utils.formatNumberLocale(data.batteryVoltage, 1)} ${UnitOfElectricPotential.VOLT} ${Utils.formatNumberLocale(Utils.toNum(data.stateBatteryCurrent.state, 1), 1)} ${UnitOfElectricalCurrent.AMPERE}`,
 					)}
 					${renderText(
 						'battery_power_soc',

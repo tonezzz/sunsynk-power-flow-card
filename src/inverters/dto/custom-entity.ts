@@ -15,11 +15,7 @@ export interface CustomEntity extends HassEntity {
 	state: string;
 	decimals: number;
 	measurement:
-		| UnitOfPower
-		| UnitOfEnergy
-		| UnitOfElectricalCurrent
-		| Percentage
-		| 'NA';
+		UnitOfPower | UnitOfEnergy | UnitOfElectricalCurrent | Percentage | 'NA';
 
 	/**
 	 * Extension of Utils.toNum, returns the state in a number
@@ -104,7 +100,10 @@ export function convertToCustomEntity(
 				entity?.state !== 'unknown' &&
 				entity.state !== undefined) ||
 			false,
-		isNaN: () => entity?.state === null || Number.isNaN(entity?.state),
+		isNaN: () =>
+			entity?.state == null ||
+			entity.state === '' ||
+			Number.isNaN(Number(entity.state)),
 		toPower: (invert?: boolean) => {
 			const unit = (entity.attributes?.unit_of_measurement || '').toLowerCase();
 			if (unit === 'kw' || unit === 'kwh') {
@@ -163,11 +162,7 @@ const __CONVERT_ENTITY_CACHE_MAX = 4096;
 function toDisplayFunction(
 	state: string,
 	measurement:
-		| UnitOfPower
-		| UnitOfEnergy
-		| UnitOfElectricalCurrent
-		| Percentage
-		| 'NA',
+		UnitOfPower | UnitOfEnergy | UnitOfElectricalCurrent | Percentage | 'NA',
 	decimals?: number,
 ): string {
 	//console.log(state, measurement, decimals);
