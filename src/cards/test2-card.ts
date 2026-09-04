@@ -2,14 +2,52 @@ import { html } from 'lit';
 import { cache } from 'lit/directives/cache.js';
 import { keyed } from 'lit/directives/keyed.js';
 import { DataDto, sunsynkPowerFlowCardConfig } from '../types';
+import { getDynamicStyles } from '../style';
 import { renderSolarElements } from '../components/compact/pv/pv-elements';
 import { renderBatteryElements } from '../components/compact/bat/bat-elements';
 import { renderGridElements } from '../components/compact/grid/grid-elements';
 import { renderLoadElements } from '../components/compact/load/load-elements';
 import { renderInverterElements } from '../components/compact/inverter/inverter-elements';
-import { getDynamicStyles } from '../style';
 
-export const compactCard = (
+const fmtNum = (v: unknown, digits = 0) =>
+	v !== undefined && v !== null && Number.isFinite(Number(v))
+		? Number(v).toFixed(digits)
+		: '--';
+
+const test2HtmlPanel = (data: DataDto) => html`
+	<div
+		style="width:100%;box-sizing:border-box;padding:6px 8px;background:rgba(0,0,0,0.4);color:#fff;font-family:Roboto,sans-serif;font-size:13px;"
+	>
+		<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;">
+			<div>
+				<div style="font-weight:500;">Pack 1</div>
+				<div>SOC: ${data.stateBatterySoc.toNum(0)}%</div>
+				<div>Power: ${fmtNum(data.batteryPower)} W</div>
+				<div>Energy: ${fmtNum(data.batteryEnergy)} Wh</div>
+			</div>
+			<div>
+				<div style="font-weight:500;">Pack 2</div>
+				<div>SOC: ${data.stateBattery2Soc.toNum(0)}%</div>
+				<div>Power: ${fmtNum(data.battery2Power)} W</div>
+				<div>Energy: ${fmtNum(data.battery2Energy)} Wh</div>
+			</div>
+			<div>
+				<div style="font-weight:500;">Pack 3</div>
+				<div>SOC: ${data.stateBattery3Soc.toNum(0)}%</div>
+				<div>Power: ${fmtNum(data.battery3Power)} W</div>
+				<div>Energy: ${fmtNum(data.battery3Energy)} Wh</div>
+			</div>
+			<div>
+				<div style="font-weight:500;">Pack 4</div>
+				<div>SOC: ${data.stateBattery4Soc.toNum(0)}%</div>
+				<div>Power: ${fmtNum(data.battery4Power)} W</div>
+				<div>Energy: ${fmtNum(data.battery4Energy)} Wh</div>
+			</div>
+		</div>
+	</div>
+`;
+
+export const test2Card = (
 	config: sunsynkPowerFlowCardConfig,
 	inverterImg: string,
 	data: DataDto,
@@ -21,15 +59,13 @@ export const compactCard = (
 		? cache(
 				keyed(
 					titleKey,
-					html`
-						<h1
-							style="text-align: center; color: ${
-								config.title_colour || 'inherit'
-							}; font-size: ${config.title_size || '32px'};"
-						>
-							${config.title}
-						</h1>
-					`,
+					html`<h1
+						style="text-align: center; color: ${
+							config.title_colour || 'inherit'
+						}; font-size: ${config.title_size || '32px'};"
+					>
+						${config.title}
+					</h1>`,
 				),
 			)
 		: '';
@@ -41,9 +77,7 @@ export const compactCard = (
 				<svg
 					viewBox="${
 						config.wide
-							? data.batteryCount >= 3
-								? '0 0 720 500'
-								: '0 0 720 405'
+							? '0 0 720 405'
 							: `${data.viewBoxXLite} ${data.viewBoxYLite} ${data.viewBoxWidthLite} ${data.viewBoxHeightLite}`
 					}"
 					preserveAspectRatio="xMidYMid meet"
@@ -67,6 +101,9 @@ export const compactCard = (
 					<!-- Inverter Elements -->
 					${renderInverterElements(data, inverterImg, config)}
 				</svg>
+
+				<!-- Test2 HTML Pack Panel -->
+				${test2HtmlPanel(data)}
 			</div>
 		</ha-card>
 	`;

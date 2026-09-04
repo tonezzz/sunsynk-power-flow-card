@@ -44,6 +44,10 @@ export enum CardStyle {
 	Compact = 'compact',
 	Lite = 'lite',
 	Full = 'full',
+	Test2 = 'test2',
+	Ss2 = 'ss2',
+	Ss3 = 'ss3',
+	Ss4 = 'ss4',
 }
 
 export enum AutarkyType {
@@ -55,6 +59,7 @@ export enum AutarkyType {
 export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 	type: string;
 	cardstyle: CardStyle;
+	part?: string;
 	wide?: boolean;
 	large_font?: boolean;
 	show_solar: boolean;
