@@ -818,8 +818,8 @@ export const renderBatteryElements = (
 							? 'inline'
 							: 'none'
 					};"
-					x="-6.5%"
-					y="95"
+					x="19%"
+					y="0"
 				>
 					<rect
 						x="159"
@@ -940,7 +940,7 @@ export const renderBatteryElements = (
 							? 'inline'
 							: 'none'
 					};"
-					x="19%"
+					x="-6.5%"
 					y="95"
 				>
 					<rect
@@ -2645,7 +2645,7 @@ export const renderBatteryElements = (
 				</svg>
 				<svg
 					id="battery_icon"
-					style="overflow: visible;"
+					style="overflow: visible; display: ${batteryCount === 4 ? 'none' : 'inline'};"
 					x="${batteryCount === 2 || batteryCount === 3 || batteryCount === 4 ? '-6.25%' : '0%'}"
 				>
 					${createTextWithPopup(
