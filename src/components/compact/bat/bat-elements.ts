@@ -142,7 +142,7 @@ export const renderBatteryElements = (
 						true,
 						`${largeFont !== true ? 'st14' : 'st4'} st8`,
 						batteryColour,
-						`${Utils.formatNumberLocale(data.batteryVoltage, 1)} ${UnitOfElectricPotential.VOLT} ${Utils.formatNumberLocale(data.stateBatteryCurrent.toNum(1), 1)} ${UnitOfElectricalCurrent.AMPERE}`,
+						`${Utils.formatNumberLocale(data.batteryVoltage, 1)} ${UnitOfElectricPotential.VOLT} ${Utils.formatNumberLocale(show_absolute ? Math.abs(Utils.toNum(data.stateBatteryCurrent.state, 1)) : Utils.toNum(data.stateBatteryCurrent.state, 1), 1)} ${UnitOfElectricalCurrent.AMPERE}`,
 					)}
 					${renderText(
 						'battery_power_soc',
@@ -152,8 +152,8 @@ export const renderBatteryElements = (
 						`${largeFont !== true ? 'st14' : 'st4'} st8`,
 						batteryColour,
 						auto_scale
-							? `${Utils.convertValue(data.batteryPowerTotal, decimalPlaces) || 0} ${data.stateBatterySoc.toNum(0)} %`
-							: `${Utils.toNum(data.batteryPowerTotal || 0, 0)} ${UnitOfPower.WATT} ${data.stateBatterySoc.toNum(0)} %`,
+							? `${Utils.convertValue(show_absolute ? Math.abs(data.batteryPowerTotal) : data.batteryPowerTotal, decimalPlaces) || 0} ${data.stateBatterySoc.toNum(0)} %`
+							: `${Utils.toNum(show_absolute ? Math.abs(data.batteryPowerTotal) : data.batteryPowerTotal || 0, 0)} ${UnitOfPower.WATT} ${data.stateBatterySoc.toNum(0)} %`,
 					)}
 				</svg>
 				<svg
