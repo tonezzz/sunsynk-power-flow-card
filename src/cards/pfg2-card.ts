@@ -147,26 +147,30 @@ export const pfg2Card = (
 				return { x: ((c - 1) / gridSize) * 100, y: cy };
 			case 'right':
 				return { x: ((c + n - 1) / gridSize) * 100, y: cy };
+			case 'topleft':
+				return { x: ((c - 1) / gridSize) * 100, y: ((r - 1) / gridSize) * 100 };
+			case 'topright':
+				return {
+					x: ((c + n - 1) / gridSize) * 100,
+					y: ((r - 1) / gridSize) * 100,
+				};
+			case 'bottomleft':
+				return {
+					x: ((c - 1) / gridSize) * 100,
+					y: ((r + n - 1) / gridSize) * 100,
+				};
+			case 'bottomright':
+				return {
+					x: ((c + n - 1) / gridSize) * 100,
+					y: ((r + n - 1) / gridSize) * 100,
+				};
 			default:
 				return { x: cx, y: cy };
 		}
 	};
-	// End the line at the cell border so it just touches adjacent tiles.
-	const cellEdge = (from: string, to: string) => {
-		const a = cellCenter(from);
-		const b = cellCenter(to);
-		const dx = b.x - a.x;
-		const dy = b.y - a.y;
-		const dist = Math.sqrt(dx * dx + dy * dy);
-		const half = 50 / gridSize;
-		if (dist === 0) return a;
-		return { x: a.x + (dx / dist) * half, y: a.y + (dy / dist) * half };
-	};
 	const flowLines = (config.pfg_lines || []).map((l) => {
-		const toVia = l.via ? l.via : l.to;
-		const fromVia = l.via ? l.via : l.from;
-		const a = cellEdge(l.from, toVia);
-		const b = cellEdge(l.to, fromVia);
+		const a = cellCenter(l.from);
+		const b = cellCenter(l.to);
 		let v = l.via ? cellCenter(l.via) : null;
 		if (l.elbow) {
 			v =

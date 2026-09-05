@@ -83,6 +83,7 @@ export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 			value?: number;
 			max?: number;
 			color?: string;
+			gradient?: { from: string; to: string };
 			bg?: string;
 			decimals?: number;
 			unit?: string;

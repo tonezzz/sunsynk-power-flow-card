@@ -76,9 +76,14 @@ export const pfgCard = (
 	// or supplied from the card config via `pfg_images`.
 	const tileImages: Record<string, string> = { ...(config.pfg_images || {}) };
 	const center = Math.floor(gridSize / 2) + 1;
-	if (!tileImages[`${center},${center}`] && inverterImg) {
+	const centerKey = `${center},${center}`;
+	if (
+		!tileImages[centerKey] &&
+		!config.pfg_charts?.[centerKey] &&
+		inverterImg
+	) {
 		// Default centre tile shows the inverter image for the selected model.
-		tileImages[`${center},${center}`] = inverterImg;
+		tileImages[centerKey] = inverterImg;
 	}
 
 	// Tile label map: key = "r,c" (1-indexed). Use `pfg_labels` in the config.
@@ -144,6 +149,23 @@ export const pfgCard = (
 				return { x: ((c - 1) / gridSize) * 100, y: cy };
 			case 'right':
 				return { x: ((c + n - 1) / gridSize) * 100, y: cy };
+			case 'topleft':
+				return { x: ((c - 1) / gridSize) * 100, y: ((r - 1) / gridSize) * 100 };
+			case 'topright':
+				return {
+					x: ((c + n - 1) / gridSize) * 100,
+					y: ((r - 1) / gridSize) * 100,
+				};
+			case 'bottomleft':
+				return {
+					x: ((c - 1) / gridSize) * 100,
+					y: ((r + n - 1) / gridSize) * 100,
+				};
+			case 'bottomright':
+				return {
+					x: ((c + n - 1) / gridSize) * 100,
+					y: ((r + n - 1) / gridSize) * 100,
+				};
 			default:
 				return { x: cx, y: cy };
 		}
@@ -250,36 +272,36 @@ export const pfgCard = (
 												1,
 											);
 											const decimals = chartDef.decimals ?? 0;
-											const color = chartDef.color ?? '#00E676';
-											const bg = chartDef.bg ?? '#102040';
+											const gaugeColor = chartDef.color ?? '#00E676';
+											const gaugeBg = chartDef.bg ?? '#102040';
+											const gradId = `pfg-gauge-grad-${c.row}-${c.col}`;
+											const gaugeStroke = chartDef.gradient
+												? `url(#${gradId})`
+												: gaugeColor;
 											const off = gaugeCirc * (1 - pct);
 											return svg`<svg viewBox="0 0 100 100" style="width:80%;height:80%;">
-												<g transform="rotate(-90 50 50)">
-													<circle cx="50" cy="50" r="${gaugeR}" fill="none" stroke="${bg}" stroke-width="12" />
-													<circle cx="50" cy="50" r="${gaugeR}" fill="none" stroke="${color}" stroke-width="12" stroke-dasharray="${gaugeCirc}" stroke-dashoffset="${off}" stroke-linecap="round" />
-												</g>
-												<text x="50" y="48" text-anchor="middle" dominant-baseline="middle" font-size="16" fill="#fff">${val.toFixed(decimals)}</text>
-												${chartDef.label ? svg`<text x="50" y="70" text-anchor="middle" font-size="10" fill="#fff">${chartDef.label}</text>` : ''}
-												${chartDef.unit ? svg`<text x="50" y="85" text-anchor="middle" font-size="9" fill="#aaa">${chartDef.unit}</text>` : ''}
-											</svg>`;
+																<defs>
+																	${chartDef.gradient ? svg`<linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${chartDef.gradient.from}" /><stop offset="100%" stop-color="${chartDef.gradient.to}" /></linearGradient>` : ''}
+																</defs>
+																<g transform="rotate(-90 50 50)">
+																	<circle cx="50" cy="50" r="${gaugeR}" fill="none" stroke="${gaugeBg}" stroke-width="12" />
+																	<circle cx="50" cy="50" r="${gaugeR}" fill="none" stroke="${gaugeStroke}" stroke-width="12" stroke-dasharray="${gaugeCirc}" stroke-dashoffset="${off}" stroke-linecap="round" />
+																</g>
+																<text x="50" y="48" text-anchor="middle" dominant-baseline="middle" font-size="16" fill="#fff">${val.toFixed(decimals)}</text>
+																${chartDef.label ? svg`<text x="50" y="70" text-anchor="middle" font-size="10" fill="#fff">${chartDef.label}</text>` : ''}
+																${chartDef.unit ? svg`<text x="50" y="85" text-anchor="middle" font-size="9" fill="#aaa">${chartDef.unit}</text>` : ''}
+															</svg>`;
 										})()
 									: undefined;
 							const title = `Tile ${key}${status ? ` – ${status}` : ''}${entityState ? ` (${entityState})` : ''}`;
+							const cellStyle = `border:1px solid ${color || 'rgba(255,255,255,0.2)'};background:${color ? hexToRgba(color, 0.2) : 'rgba(255,255,255,0.05)'};display:flex;align-items:center;justify-content:center;font-size:min(1.5vw,10px);text-align:center;box-sizing:border-box;overflow:hidden;position:relative;${radius ? `border-radius:${radius};` : ''}${span ? `grid-row:${c.row}/span ${span};grid-column:${c.col}/span ${span};` : ''}`;
 							return html`
 								<div
 									class="pfg-cell"
 									id="pfg-r${c.row}-c${c.col}"
 									data-row="${c.row}"
 									data-col="${c.col}"
-									style="border:1px solid ${
-										color || 'rgba(255,255,255,0.2)'
-									};background:${
-										color ? hexToRgba(color, 0.2) : 'rgba(255,255,255,0.05)'
-									};display:flex;align-items:center;justify-content:center;font-size:min(1.5vw,10px);text-align:center;box-sizing:border-box;overflow:hidden;${radius ? `border-radius:${radius};` : ''}${
-										span
-											? `grid-row:${c.row}/span ${span};grid-column:${c.col}/span ${span};`
-											: ''
-									}"
+									style="${cellStyle}"
 									title="${title}"
 								>
 									${
@@ -291,20 +313,36 @@ export const pfgCard = (
 														title="${title}"
 														style="--mdc-icon-size:60%;width:60%;height:60%;color:${color || '#fff'};"
 													></ha-icon>`
-												: imgSrc
-													? html`<img
-															src="${imgSrc}"
-															alt="Tile ${key}"
-															title="${title}"
-															style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom});pointer-events:none;"
-														/>`
-													: chartSvg
-														? chartSvg
-														: valueText || sumText
-															? html`<span title="${title}"
-																	>${valueText || sumText}</span
-																>`
-															: html`r${c.row}:c${c.col}`
+												: imgSrc && chartSvg
+													? html`<div
+															style="position:absolute;inset:0;z-index:0;"
+														>
+															<img
+																src="${imgSrc}"
+																alt="Tile ${key}"
+																title="${title}"
+																style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom});pointer-events:none;"
+															/>
+															<div
+																style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:1;"
+															>
+																${chartSvg}
+															</div>
+														</div>`
+													: imgSrc
+														? html`<img
+																src="${imgSrc}"
+																alt="Tile ${key}"
+																title="${title}"
+																style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom});pointer-events:none;"
+															/>`
+														: chartSvg
+															? chartSvg
+															: valueText || sumText
+																? html`<span title="${title}"
+																		>${valueText || sumText}</span
+																	>`
+																: html`r${c.row}:c${c.col}`
 									}
 								</div>
 							`;
