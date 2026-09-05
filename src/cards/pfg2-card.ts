@@ -1,6 +1,7 @@
 import { html, svg } from 'lit';
+import { renderPfgChart } from './pfg-card';
 import { HomeAssistant } from 'custom-card-helpers';
-import { DataDto, sunsynkPowerFlowCardConfig } from '../types';
+import { DataDto, PfgChartDef, sunsynkPowerFlowCardConfig } from '../types';
 
 const STATUS_COLORS: Record<string, string> = {
 	online: '#00E676',
@@ -188,10 +189,11 @@ export const pfg2Card = (
 		if (l.entity && hass) {
 			const st = hass.states[l.entity];
 			const v = st ? parseFloat(st.state) : NaN;
-			if (!isNaN(v)) {
-				live = Math.abs(v) > 0;
-				direction = v >= 0 ? 1 : -1;
-				const ratio = Math.min(Math.abs(v) / (l.max_power ?? 1000), 1);
+			const value = l.invert && !isNaN(v) ? -v : v;
+			if (!isNaN(value)) {
+				live = Math.abs(value) > 0;
+				direction = value >= 0 ? 1 : -1;
+				const ratio = Math.min(Math.abs(value) / (l.max_power ?? 1000), 1);
 				duration = (l.speed ?? 0.8) / Math.max(ratio, 0.15);
 			}
 			const statusColor = statusColors[stateToStatus(st?.state)];
@@ -247,15 +249,50 @@ export const pfg2Card = (
 											}`;
 										})()
 									: undefined;
-							const valueEntity = config.pfg_values?.[key];
+							const valueDef = config.pfg_values?.[key];
 							const valueText =
-								valueEntity && hass && hass.states[valueEntity]
-									? `${hass.states[valueEntity].state}${
-											hass.states[valueEntity].attributes?.unit_of_measurement
-												? ` ${hass.states[valueEntity].attributes.unit_of_measurement}`
-												: ''
-										}`
+								valueDef && hass
+									? (() => {
+											const def =
+												typeof valueDef === 'string'
+													? { entity: valueDef }
+													: valueDef;
+											const st = def.entity
+												? hass.states[def.entity]
+												: undefined;
+											if (!st) return undefined;
+											const raw = parseFloat(st.state);
+											const scaled = isNaN(raw)
+												? st.state
+												: (raw * (def.scale ?? 1)).toFixed(def.decimals ?? 1);
+											const unit =
+												def.unit ?? st.attributes?.unit_of_measurement ?? '';
+											return `${def.label ? `${def.label} ` : ''}${scaled}${unit ? ` ${unit}` : ''}`;
+										})()
 									: undefined;
+							const chartDefs = config.pfg_charts?.[key];
+							const charts = Array.isArray(chartDefs)
+								? chartDefs
+								: chartDefs
+									? [chartDefs]
+									: [];
+							const chartItems = charts
+								.map((chartDef) => {
+									const tpl = renderPfgChart(chartDef, c, hass);
+									return tpl ? { def: chartDef, tpl } : undefined;
+								})
+								.filter(
+									(i): i is { def: PfgChartDef; tpl: unknown } =>
+										i !== undefined,
+								);
+							const chartOverlays = chartItems.map((i) => {
+								const pos = i.def.position || 'center';
+								const style =
+									pos === 'bottom'
+										? 'position:absolute;bottom:2%;left:5%;width:90%;height:32%;'
+										: 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;height:60%;';
+								return html`<div style="${style}">${i.tpl}</div>`;
+							});
 							const title = `Tile ${key}${status ? ` – ${status}` : ''}${entityState ? ` (${entityState})` : ''}`;
 							return html`
 								<div
@@ -283,18 +320,36 @@ export const pfg2Card = (
 														title="${title}"
 														style="--mdc-icon-size:60%;width:60%;height:60%;color:${color || '#fff'};"
 													></ha-icon>`
-												: imgSrc
-													? html`<img
-															src="${imgSrc}"
-															alt="Tile ${key}"
-															title="${title}"
-															style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom});pointer-events:none;"
-														/>`
-													: valueText || sumText
-														? html`<span title="${title}"
-																>${valueText || sumText}</span
-															>`
-														: html`r${c.row}:c${c.col}`
+												: imgSrc && chartOverlays.length
+													? html`<div
+															style="position:absolute;inset:0;z-index:0;"
+														>
+															<img
+																src="${imgSrc}"
+																alt="Tile ${key}"
+																title="${title}"
+																style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom});pointer-events:none;"
+															/>
+															<div
+																style="position:absolute;inset:0;pointer-events:none;z-index:1;"
+															>
+																${chartOverlays}
+															</div>
+														</div>`
+													: imgSrc
+														? html`<img
+																src="${imgSrc}"
+																alt="Tile ${key}"
+																title="${title}"
+																style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom});pointer-events:none;"
+															/>`
+														: chartOverlays.length
+															? chartOverlays
+															: valueText || sumText
+																? html`<span title="${title}"
+																		>${valueText || sumText}</span
+																	>`
+																: html`r${c.row}:c${c.col}`
 									}
 								</div>
 							`;

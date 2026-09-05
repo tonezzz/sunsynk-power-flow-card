@@ -58,6 +58,27 @@ export enum AutarkyType {
 	No = 'no',
 }
 
+export interface PfgChartDef {
+	type: 'gauge' | 'bar' | 'history';
+	entity?: string;
+	value?: number;
+	scale?: number;
+	min?: number;
+	max?: number;
+	hours?: number;
+	color?: string;
+	gradient?: { from: string; to: string };
+	bg?: string;
+	stroke?: string;
+	fill?: string;
+	decimals?: number;
+	unit?: string;
+	label?: string;
+	needle?: boolean;
+	position?: 'center' | 'bottom';
+	segments?: { from: number; color: string }[];
+}
+
 export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 	type: string;
 	cardstyle: CardStyle;
@@ -75,22 +96,18 @@ export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 	pfg_images?: Record<string, string>;
 	pfg_icons?: Record<string, string>;
 	pfg_image_zoom?: number;
-	pfg_values?: Record<string, string>;
-	pfg_charts?: Record<
+	pfg_values?: Record<
 		string,
-		{
-			type: 'gauge' | 'bar';
-			entity?: string;
-			value?: number;
-			max?: number;
-			color?: string;
-			gradient?: { from: string; to: string };
-			bg?: string;
-			decimals?: number;
-			unit?: string;
-			label?: string;
-		}
+		| string
+		| {
+				entity: string;
+				scale?: number;
+				decimals?: number;
+				unit?: string;
+				label?: string;
+		  }
 	>;
+	pfg_charts?: Record<string, PfgChartDef | PfgChartDef[]>;
 	pfg_lines?: Array<{
 		from: string;
 		to: string;
@@ -100,6 +117,7 @@ export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 		color?: string;
 		speed?: number;
 		max_power?: number;
+		invert?: boolean;
 	}>;
 	pfg_spans?: Record<string, number>;
 	pfg_radius?: Record<string, string>;
