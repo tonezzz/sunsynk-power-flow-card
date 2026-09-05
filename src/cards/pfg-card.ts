@@ -27,6 +27,7 @@ export const pfgCard = (
 	const tileImages: Record<string, string> = { ...(config.pfg_images || {}) };
 	const center = Math.floor(gridSize / 2) + 1;
 	const centerKey = `${center},${center}`;
+	const inverterTiles = new Set<string>();
 	if (
 		!tileImages[centerKey] &&
 		!config.pfg_charts?.[centerKey] &&
@@ -34,6 +35,7 @@ export const pfgCard = (
 	) {
 		// Default centre tile shows the inverter image for the selected model.
 		tileImages[centerKey] = inverterImg;
+		inverterTiles.add(centerKey);
 	}
 
 	// Tile label map: key = "r,c" (1-indexed). Use `pfg_labels` in the config.
@@ -178,6 +180,8 @@ export const pfgCard = (
 							const span = spans[key];
 							const radius = config.pfg_radius?.[key];
 							const imgSrc = tileImages[key];
+							const imgFit = inverterTiles.has(key) ? 'contain' : 'cover';
+							const imgZoom = inverterTiles.has(key) ? 1 : imageZoom;
 							const label = tileLabels[key];
 							const icon = tileIcons[key];
 							const status = getTileStatus(key);
@@ -269,7 +273,7 @@ export const pfgCard = (
 																src="${imgSrc}"
 																alt="Tile ${key}"
 																title="${title}"
-																style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom});pointer-events:none;"
+																style="position:absolute;inset:0;width:100%;height:100%;object-fit:${imgFit};transform:scale(${imgZoom});pointer-events:none;"
 															/>
 															<div
 																style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:1;"
@@ -282,7 +286,7 @@ export const pfgCard = (
 																src="${imgSrc}"
 																alt="Tile ${key}"
 																title="${title}"
-																style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom});pointer-events:none;"
+																style="width:100%;height:100%;object-fit:${imgFit};transform:scale(${imgZoom});pointer-events:none;"
 															/>`
 														: chartOverlays.length
 															? chartOverlays
