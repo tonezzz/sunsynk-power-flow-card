@@ -95,7 +95,7 @@ export function renderPfgChart(
 	);
 	if (chartDef.type === 'bar') {
 		const barHeight = 70 * pct;
-		return svg`<svg viewBox="0 0 100 100" style="width:80%;height:80%;">
+		return svg`<svg viewBox="0 0 100 100" style="width:100%;height:100%;">
 															<rect x="20" y="15" width="60" height="70" rx="4" fill="none" stroke="${chartDef.bg ?? 'rgba(255,255,255,0.15)'}" stroke-width="2" />
 															<rect x="24" y="${85 - barHeight}" width="52" height="${barHeight}" rx="2" fill="${activeColor}" />
 															<text x="50" y="95" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="bold" fill="#fff">${displayVal}</text>
@@ -191,14 +191,14 @@ export function renderPfgChart(
 						})
 						.join(' ');
 					const areaPts = `0,${height} ${pts} ${width},${height}`;
-					return svg`<svg viewBox="0 0 100 60" style="width:90%;height:90%;">
+					return svg`<svg viewBox="0 0 100 60" preserveAspectRatio="none" style="width:100%;height:100%;">
 																		<polygon points="${areaPts}" fill="${fillColor}" />
 																		<polyline points="${pts}" fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
 																	</svg>`;
 				})
 				.catch(
 					() =>
-						svg`<svg viewBox="0 0 100 60" style="width:90%;height:90%;"><text x="50" y="30" text-anchor="middle" font-size="8" fill="#aaa">no history</text></svg>`,
+						svg`<svg viewBox="0 0 100 60" preserveAspectRatio="none" style="width:100%;height:100%;"><text x="50" y="30" text-anchor="middle" font-size="8" fill="#aaa">no history</text></svg>`,
 				);
 			historyCache.set(cacheKey, { ts: end.getTime(), promise });
 		}
@@ -237,7 +237,7 @@ export function renderPfgChart(
 			.filter((x) => x !== '');
 		const needlePath =
 			'M -34,-3 L -40,-1 A 1,1,0,0,0,-40,1 L -34,3 A 2,2,0,0,0,-34,-3 Z';
-		return svg`<svg viewBox="-50 -50 100 70" style="width:80%;height:80%;">
+		return svg`<svg viewBox="-50 -50 100 70" style="width:100%;height:100%;">
 															<path d="M -40 0 A 40 40 0 0 1 40 0" fill="none" stroke="${chartDef.bg ?? 'rgba(255,255,255,0.15)'}" stroke-width="12" stroke-linecap="butt" />
 															${segmentArcs}
 															<path d="${needlePath}" fill="#fff" stroke="rgba(0,0,0,0.6)" stroke-width="1" transform="rotate(${valueAngle})" style="transform-origin:0 0;" />
@@ -252,7 +252,7 @@ export function renderPfgChart(
 		const gradId = `pfg-gauge-grad-${c.row}-${c.col}`;
 		const gaugeStroke = chartDef.gradient ? `url(#${gradId})` : gaugeColor;
 		const off = gaugeCirc * (1 - pct);
-		return svg`<svg viewBox="0 0 100 100" style="width:80%;height:80%;">
+		return svg`<svg viewBox="0 0 100 100" style="width:100%;height:100%;">
 															<defs>
 																${chartDef.gradient ? svg`<linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${chartDef.gradient.from}" /><stop offset="100%" stop-color="${chartDef.gradient.to}" /></linearGradient>` : ''}
 															</defs>

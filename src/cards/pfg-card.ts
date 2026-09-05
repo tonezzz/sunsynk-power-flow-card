@@ -241,8 +241,8 @@ export const pfgCard = (
 								const pos = i.def.position || 'center';
 								const style =
 									pos === 'bottom'
-										? 'position:absolute;bottom:2%;left:5%;width:90%;height:32%;'
-										: 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;height:60%;';
+										? 'position:absolute;bottom:2%;left:2.5%;width:95%;height:35%;'
+										: 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:95%;height:70%;';
 								return html`<div style="${style}">${i.tpl}</div>`;
 							});
 							const title = `Tile ${key}${status ? ` – ${status}` : ''}${entityState ? ` (${entityState})` : ''}`;
