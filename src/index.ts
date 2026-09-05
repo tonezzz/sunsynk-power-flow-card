@@ -43,7 +43,7 @@ import { ss2Card } from './cards/ss2-card';
 import { ss3Card } from './cards/ss3-card';
 import { ss4Card } from './cards/ss4-card';
 import { pfgCard } from './cards/pfg-card';
-import { pfg2Card } from './cards/pfg2-card';
+import { applyPreset } from './cards/pfg-presets';
 import { globalData } from './helpers/globals';
 import { InverterFactory } from './inverters/inverter-factory';
 import { BatteryIconManager } from './helpers/battery-icon-manager';
@@ -3338,7 +3338,12 @@ export class SunsynkPowerFlowCard extends LitElement {
 				template = pfgCard(config, inverterImg, data, this.hass);
 			} else if (this.isPfg2Card) {
 				variantKey = 'pfg2';
-				template = pfg2Card(config, inverterImg, data, this.hass);
+				template = pfgCard(
+					{ ...config, pfg_grid_size: config.pfg_grid_size ?? 15 },
+					inverterImg,
+					data,
+					this.hass,
+				);
 			} else if (this.isLiteCard || this.isCompactCard) {
 				variantKey = 'compact';
 				template = compactCard(config, inverterImg, data);
@@ -3587,6 +3592,7 @@ export class SunsynkPowerFlowCard extends LitElement {
 	}
 
 	setConfig(config) {
+		config = applyPreset(config);
 		try {
 			if (config.show_battery && !config.battery) {
 				throw Error(localize('errors.battery.bat'));

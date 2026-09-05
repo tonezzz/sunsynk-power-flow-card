@@ -82,6 +82,7 @@ export interface PfgChartDef {
 export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 	type: string;
 	cardstyle: CardStyle;
+	preset?: string;
 	part?: string;
 	wide?: boolean;
 	large_font?: boolean;
