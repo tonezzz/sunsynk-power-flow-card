@@ -75,6 +75,20 @@ export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 	pfg_icons?: Record<string, string>;
 	pfg_image_zoom?: number;
 	pfg_values?: Record<string, string>;
+	pfg_charts?: Record<
+		string,
+		{
+			type: 'gauge' | 'bar';
+			entity?: string;
+			value?: number;
+			max?: number;
+			color?: string;
+			bg?: string;
+			decimals?: number;
+			unit?: string;
+			label?: string;
+		}
+	>;
 	pfg_lines?: Array<{
 		from: string;
 		to: string;

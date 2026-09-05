@@ -136,8 +136,8 @@ export const pfg2Card = (
 		const [key, side] = (s || '').split('@');
 		const { r, c } = parseCell(key);
 		const n = spans[key] || 1;
-		const cx = ((c + n / 2 - 0.5) / gridSize) * 100;
-		const cy = ((r + n / 2 - 0.5) / gridSize) * 100;
+		const cx = ((c - 1 + n / 2) / gridSize) * 100;
+		const cy = ((r - 1 + n / 2) / gridSize) * 100;
 		switch (side) {
 			case 'top':
 				return { x: cx, y: ((r - 1) / gridSize) * 100 };

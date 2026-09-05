@@ -133,8 +133,8 @@ export const pfgCard = (
 		const [key, side] = (s || '').split('@');
 		const { r, c } = parseCell(key);
 		const n = spans[key] || 1;
-		const cx = ((c + n / 2 - 0.5) / gridSize) * 100;
-		const cy = ((r + n / 2 - 0.5) / gridSize) * 100;
+		const cx = ((c - 1 + n / 2) / gridSize) * 100;
+		const cy = ((r - 1 + n / 2) / gridSize) * 100;
 		switch (side) {
 			case 'top':
 				return { x: cx, y: ((r - 1) / gridSize) * 100 };
@@ -233,6 +233,37 @@ export const pfgCard = (
 												: ''
 										}`
 									: undefined;
+							const chartDef = config.pfg_charts?.[key];
+							const gaugeR = 40;
+							const gaugeCirc = 2 * Math.PI * gaugeR;
+							const chartSvg =
+								chartDef && chartDef.type === 'gauge' && hass
+									? (() => {
+											const st = chartDef.entity
+												? hass.states[chartDef.entity]
+												: undefined;
+											const raw = st ? st.state : (chartDef.value ?? 0);
+											const val = parseFloat(String(raw)) || 0;
+											const max = chartDef.max ?? 100;
+											const pct = Math.min(
+												Math.max(max > 0 ? val / max : 0, 0),
+												1,
+											);
+											const decimals = chartDef.decimals ?? 0;
+											const color = chartDef.color ?? '#00E676';
+											const bg = chartDef.bg ?? '#102040';
+											const off = gaugeCirc * (1 - pct);
+											return svg`<svg viewBox="0 0 100 100" style="width:80%;height:80%;">
+												<g transform="rotate(-90 50 50)">
+													<circle cx="50" cy="50" r="${gaugeR}" fill="none" stroke="${bg}" stroke-width="12" />
+													<circle cx="50" cy="50" r="${gaugeR}" fill="none" stroke="${color}" stroke-width="12" stroke-dasharray="${gaugeCirc}" stroke-dashoffset="${off}" stroke-linecap="round" />
+												</g>
+												<text x="50" y="48" text-anchor="middle" dominant-baseline="middle" font-size="16" fill="#fff">${val.toFixed(decimals)}</text>
+												${chartDef.label ? svg`<text x="50" y="70" text-anchor="middle" font-size="10" fill="#fff">${chartDef.label}</text>` : ''}
+												${chartDef.unit ? svg`<text x="50" y="85" text-anchor="middle" font-size="9" fill="#aaa">${chartDef.unit}</text>` : ''}
+											</svg>`;
+										})()
+									: undefined;
 							const title = `Tile ${key}${status ? ` – ${status}` : ''}${entityState ? ` (${entityState})` : ''}`;
 							return html`
 								<div
@@ -267,11 +298,13 @@ export const pfgCard = (
 															title="${title}"
 															style="width:100%;height:100%;object-fit:cover;transform:scale(${imageZoom});pointer-events:none;"
 														/>`
-													: valueText || sumText
-														? html`<span title="${title}"
-																>${valueText || sumText}</span
-															>`
-														: html`r${c.row}:c${c.col}`
+													: chartSvg
+														? chartSvg
+														: valueText || sumText
+															? html`<span title="${title}"
+																	>${valueText || sumText}</span
+																>`
+															: html`r${c.row}:c${c.col}`
 									}
 								</div>
 							`;
