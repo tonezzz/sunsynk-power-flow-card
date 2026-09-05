@@ -304,7 +304,7 @@ export const pfg2Card = (
 										color || 'rgba(255,255,255,0.2)'
 									};background:${
 										color ? hexToRgba(color, 0.2) : 'rgba(255,255,255,0.05)'
-									};display:flex;align-items:center;justify-content:center;font-size:min(1.5vw,10px);text-align:center;box-sizing:border-box;overflow:hidden;${radius ? `border-radius:${radius};` : ''}${
+									};display:flex;align-items:center;justify-content:center;font-size:min(1.5vw,10px);text-align:center;box-sizing:border-box;overflow:hidden;position:relative;${radius ? `border-radius:${radius};` : ''}${
 										span
 											? `grid-row:${c.row}/span ${span};grid-column:${c.col}/span ${span};`
 											: ''
