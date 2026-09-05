@@ -43,6 +43,7 @@ import { ss2Card } from './cards/ss2-card';
 import { ss3Card } from './cards/ss3-card';
 import { ss4Card } from './cards/ss4-card';
 import { pfgCard } from './cards/pfg-card';
+import { pfg2Card } from './cards/pfg2-card';
 import { globalData } from './helpers/globals';
 import { InverterFactory } from './inverters/inverter-factory';
 import { BatteryIconManager } from './helpers/battery-icon-manager';
@@ -3315,6 +3316,7 @@ export class SunsynkPowerFlowCard extends LitElement {
 				| 'ss3'
 				| 'ss4'
 				| 'pfg'
+				| 'pfg2'
 				| undefined;
 			if (this.isFullCard) {
 				variantKey = 'full';
@@ -3333,7 +3335,10 @@ export class SunsynkPowerFlowCard extends LitElement {
 				template = ss4Card(config, inverterImg, data);
 			} else if (this.isPfgCard) {
 				variantKey = 'pfg';
-				template = pfgCard(config, inverterImg, data);
+				template = pfgCard(config, inverterImg, data, this.hass);
+			} else if (this.isPfg2Card) {
+				variantKey = 'pfg2';
+				template = pfg2Card(config, inverterImg, data, this.hass);
 			} else if (this.isLiteCard || this.isCompactCard) {
 				variantKey = 'compact';
 				template = compactCard(config, inverterImg, data);
@@ -3495,7 +3500,11 @@ export class SunsynkPowerFlowCard extends LitElement {
 	}
 
 	get isPfgCard() {
-		return this._config.cardstyle == CardStyle.Pfg;
+		return this._config.cardstyle == CardStyle.PFG;
+	}
+
+	get isPfg2Card() {
+		return this._config.cardstyle == CardStyle.PFG2;
 	}
 
 	colourConvert(colour: string) {

@@ -48,6 +48,8 @@ export enum CardStyle {
 	Ss2 = 'ss2',
 	Ss3 = 'ss3',
 	Ss4 = 'ss4',
+	PFG = 'pfg',
+	PFG2 = 'pfg2',
 }
 
 export enum AutarkyType {
@@ -68,6 +70,32 @@ export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 	center_no_grid: boolean;
 	card_height?: string;
 	card_width?: string;
+	pfg_grid_size?: number;
+	pfg_images?: Record<string, string>;
+	pfg_icons?: Record<string, string>;
+	pfg_image_zoom?: number;
+	pfg_values?: Record<string, string>;
+	pfg_lines?: Array<{
+		from: string;
+		to: string;
+		via?: string;
+		elbow?: 'v' | 'h';
+		entity?: string;
+		color?: string;
+	}>;
+	pfg_spans?: Record<string, number>;
+	pfg_radius?: Record<string, string>;
+	pfg_sums?: Record<
+		string,
+		{ entities: string[]; scale?: number; decimals?: number; unit?: string }
+	>;
+	pfg_labels?: Record<string, string>;
+	pfg_status?: Record<
+		string,
+		'online' | 'offline' | 'running' | 'stopped' | 'warning' | 'unknown'
+	>;
+	pfg_entities?: Record<string, string>;
+	pfg_status_colors?: Record<string, string>;
 	decimal_places?: number;
 	decimal_places_energy?: number;
 	dynamic_line_width?: boolean;
