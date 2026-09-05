@@ -186,17 +186,20 @@ export const pfgCard = (
 		let direction = 1; // 1 = from -> to, -1 = reverse
 		let live = false;
 		let lineColor = l.color || '#FF9100';
+		let duration = l.speed ?? 0.8; // seconds per dash cycle at max_power
 		if (l.entity && hass) {
 			const st = hass.states[l.entity];
 			const v = st ? parseFloat(st.state) : NaN;
 			if (!isNaN(v)) {
 				live = Math.abs(v) > 0;
 				direction = v >= 0 ? 1 : -1;
+				const ratio = Math.min(Math.abs(v) / (l.max_power ?? 1000), 1);
+				duration = (l.speed ?? 0.8) / Math.max(ratio, 0.15);
 			}
 			const statusColor = statusColors[stateToStatus(st?.state)];
 			if (!l.color && statusColor) lineColor = statusColor;
 		}
-		return { a, b, points, direction, live, color: lineColor };
+		return { a, b, points, direction, live, color: lineColor, duration };
 	});
 
 	return html`
@@ -216,7 +219,7 @@ export const pfgCard = (
 				}
 				<div style="position:relative;">
 					<div
-						style="display:grid;grid-template-columns:repeat(${gridSize},1fr);grid-template-rows:repeat(${gridSize},1fr);gap:0;width:100%;height:auto;aspect-ratio:1/1;box-sizing:border-box;"
+						style="display:grid;grid-template-columns:repeat(${gridSize},1fr);grid-template-rows:repeat(${gridSize},1fr);gap:0;width:${config.pfg_grid_width || '100%'};height:auto;aspect-ratio:1/1;box-sizing:border-box;"
 					>
 						${cells.map((c) => {
 							const key = `${c.row},${c.col}`;
@@ -371,7 +374,7 @@ export const pfgCard = (
 											stroke-dasharray="1.2 0.8"
 											stroke-linecap="round"
 											vector-effect="non-scaling-stroke"
-											style="animation: pfg-flow 0.8s linear infinite; animation-direction: ${fl.direction < 0 ? 'reverse' : 'normal'}; opacity: ${fl.live ? '1' : '0.6'};"
+											style="animation: pfg-flow ${fl.duration}s linear infinite; animation-direction: ${fl.direction < 0 ? 'reverse' : 'normal'}; animation-play-state: ${fl.live ? 'running' : 'paused'}; opacity: ${fl.live ? '1' : '0.6'};"
 										/>`,
 										)}
 									</svg>`

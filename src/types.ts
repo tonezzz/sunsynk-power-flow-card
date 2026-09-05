@@ -71,6 +71,7 @@ export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 	card_height?: string;
 	card_width?: string;
 	pfg_grid_size?: number;
+	pfg_grid_width?: string;
 	pfg_images?: Record<string, string>;
 	pfg_icons?: Record<string, string>;
 	pfg_image_zoom?: number;
@@ -97,6 +98,8 @@ export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 		elbow?: 'v' | 'h';
 		entity?: string;
 		color?: string;
+		speed?: number;
+		max_power?: number;
 	}>;
 	pfg_spans?: Record<string, number>;
 	pfg_radius?: Record<string, string>;
