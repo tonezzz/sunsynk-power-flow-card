@@ -176,6 +176,28 @@ export const pfgCard = (
 	});
 
 	return html`
+		${
+			config.pfg_transparent
+				? html`<style>
+						:host {
+							background: transparent !important;
+						}
+						ha-card {
+							background: transparent !important;
+							box-shadow: none !important;
+							border: none !important;
+							backdrop-filter: none !important;
+						}
+						ha-card::before,
+						ha-card::after {
+							content: none !important;
+							background: transparent !important;
+							backdrop-filter: none !important;
+							box-shadow: none !important;
+						}
+					</style>`
+				: ''
+		}
 		<ha-card
 			style="width:${config.card_width || '100%'};display:block;${config.pfg_transparent ? 'background:transparent;box-shadow:none;border:none;' : ''}"
 		>
