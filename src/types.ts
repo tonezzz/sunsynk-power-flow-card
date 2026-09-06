@@ -61,6 +61,7 @@ export enum AutarkyType {
 export interface PfgChartDef {
 	type: 'gauge' | 'bar' | 'history' | 'cycle';
 	entity?: string;
+	entities?: string[];
 	value?: number;
 	scale?: number;
 	min?: number;

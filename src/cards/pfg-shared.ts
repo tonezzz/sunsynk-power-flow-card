@@ -80,9 +80,15 @@ export function renderPfgChart(
 		></pfg-cycle>`;
 	}
 
-	const st = chartDef.entity ? hass.states[chartDef.entity] : undefined;
-	const raw = st ? st.state : (chartDef.value ?? 0);
-	const rawVal = parseFloat(String(raw)) || 0;
+	const ents: string[] =
+		chartDef.entities && chartDef.entities.length
+			? chartDef.entities
+			: chartDef.entity
+				? [chartDef.entity]
+				: [];
+	const rawVal = ents.length
+		? ents.reduce((sum, e) => sum + (parseFloat(hass.states[e]?.state) || 0), 0)
+		: parseFloat(String(chartDef.value ?? 0)) || 0;
 	const min = chartDef.min ?? 0;
 	const max = chartDef.max ?? 100;
 	const scale = chartDef.scale ?? 1;
@@ -111,7 +117,7 @@ export function renderPfgChart(
 															${chartDef.label ? svg`<text x="50" y="8" text-anchor="middle" font-size="8" font-weight="bold" fill="#aaa" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">${chartDef.label}</text>` : ''}
 														</svg>`;
 	} else if (chartDef.type === 'history') {
-		const entity = chartDef.entity;
+		const entityIds = ents;
 		const hours = chartDef.hours ?? 24;
 		const end = new Date();
 		const start = new Date(end.getTime() - hours * 60 * 60 * 1000);
@@ -119,7 +125,7 @@ export function renderPfgChart(
 		const dataMin = min * scale;
 		const strokeColor = chartDef.stroke || activeColor || '#00E676';
 		const fillColor = chartDef.fill || hexToRgba(strokeColor, 0.25);
-		const cacheKey = `${entity}:${hours}:${Math.floor(end.getTime() / (5 * 60 * 1000))}`;
+		const cacheKey = `${entityIds.join('+')}:${hours}:${Math.floor(end.getTime() / (5 * 60 * 1000))}`;
 		if (
 			!historyCache.has(cacheKey) ||
 			(historyCache.get(cacheKey)?.ts || 0) < end.getTime() - 5 * 60 * 1000
@@ -133,7 +139,7 @@ export function renderPfgChart(
 						type: 'history/history_during_period',
 						start_time: start.toISOString(),
 						end_time: end.toISOString(),
-						entity_ids: entity ? [entity] : [],
+						entity_ids: entityIds,
 						minimal_response: true,
 						no_attributes: true,
 						significant_changes_only: false,
@@ -142,16 +148,36 @@ export function renderPfgChart(
 				: h.callApi
 					? h.callApi(
 							'GET',
-							`history/period/${start.toISOString()}?end_time=${encodeURIComponent(end.toISOString())}&filter_entity_id=${entity ? encodeURIComponent(entity) : ''}`,
+							`history/period/${start.toISOString()}?end_time=${encodeURIComponent(end.toISOString())}&filter_entity_id=${entityIds.map(encodeURIComponent).join(',')}`,
 						)
 					: Promise.resolve(null);
 			const promise = call
 				.then((resp: unknown) => {
-					const list = Array.isArray(resp)
-						? resp[0] || []
-						: entity && resp && resp[entity]
-							? resp[entity]
-							: [];
+					const seriesLists: unknown[] = Array.isArray(resp)
+						? resp
+						: entityIds.map(
+								(e) => (resp && (resp as Record<string, unknown>)[e]) || [],
+							);
+					const lists = seriesLists.filter((l) => Array.isArray(l));
+					const list =
+						lists.length > 1
+							? (() => {
+									const n = Math.min(
+										...lists.map((l) => (l as unknown[]).length),
+									);
+									const out: { s: number; lu?: number }[] = [];
+									for (let i = 0; i < n; i++) {
+										let v = 0;
+										for (const l of lists) {
+											const pt = (l as { s?: unknown; state?: unknown }[])[i];
+											v += parseFloat(String(pt?.s ?? pt?.state ?? 0)) || 0;
+										}
+										const t0 = (lists[0] as { lu?: number }[])[i];
+										out.push({ s: v, lu: t0?.lu });
+									}
+									return out;
+								})()
+							: lists[0] || [];
 					const points = list
 						.map(
 							(p: {
