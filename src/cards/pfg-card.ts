@@ -135,7 +135,8 @@ export const pfgCard = (
 				return { x: cx, y: cy };
 		}
 	};
-	const flowLines = (config.pfg_lines || []).map((l) => {
+	const hideGrid = config.pfg_hide_grid === true;
+	const flowLines = (hideGrid ? [] : config.pfg_lines || []).map((l) => {
 		const a = cellCenter(l.from);
 		const b = cellCenter(l.to);
 		let v = l.via ? cellCenter(l.via) : null;
@@ -196,7 +197,7 @@ export const pfgCard = (
 							const imgSrc = tileImages[key];
 							const imgFit = inverterTiles.has(key) ? 'contain' : 'cover';
 							const imgZoom = inverterTiles.has(key) ? 1 : imageZoom;
-							const label = tileLabels[key];
+							const label = hideGrid ? undefined : tileLabels[key];
 							const icon = tileIcons[key];
 							const status = getTileStatus(key);
 							const color = status ? statusColors[status] : undefined;
@@ -262,7 +263,7 @@ export const pfgCard = (
 								return html`<div style="${style}">${i.tpl}</div>`;
 							});
 							const title = `Tile ${key}${status ? ` – ${status}` : ''}${entityState ? ` (${entityState})` : ''}`;
-							const cellStyle = `border:${tileBorder || `1px solid ${color || 'rgba(255,255,255,0.2)'}`};background:${color ? hexToRgba(color, 0.2) : 'rgba(255,255,255,0.05)'};display:flex;align-items:center;justify-content:center;font-size:min(1.5vw,10px);text-align:center;box-sizing:border-box;overflow:hidden;position:relative;${radius ? `border-radius:${radius};` : ''}${span && (span.rows > 1 || span.cols > 1) ? `grid-row:${c.row}/span ${span.rows};grid-column:${c.col}/span ${span.cols};` : ''}`;
+							const cellStyle = `border:${hideGrid ? 'none' : tileBorder || `1px solid ${color || 'rgba(255,255,255,0.2)'}`};background:${color ? hexToRgba(color, 0.2) : hideGrid ? 'transparent' : 'rgba(255,255,255,0.05)'};display:flex;align-items:center;justify-content:center;font-size:min(1.5vw,10px);text-align:center;box-sizing:border-box;overflow:hidden;position:relative;${radius ? `border-radius:${radius};` : ''}${span && (span.rows > 1 || span.cols > 1) ? `grid-row:${c.row}/span ${span.rows};grid-column:${c.col}/span ${span.cols};` : ''}`;
 							return html`
 								<div
 									class="pfg-cell"
@@ -310,7 +311,9 @@ export const pfgCard = (
 																? html`<span title="${title}"
 																		>${valueText || sumText}</span
 																	>`
-																: html`r${c.row}:c${c.col}`
+																: hideGrid
+																	? ''
+																	: html`r${c.row}:c${c.col}`
 									}
 								</div>
 							`;
