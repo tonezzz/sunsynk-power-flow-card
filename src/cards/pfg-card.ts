@@ -203,7 +203,7 @@ export const pfgCard = (
 								config.pfg_image_fit?.[key] ||
 								(inverterTiles.has(key) ? 'contain' : 'cover');
 							const imgZoom = inverterTiles.has(key) ? 1 : imageZoom;
-							const label = hideGrid ? undefined : tileLabels[key];
+							const label = tileLabels[key];
 							const icon = tileIcons[key];
 							const status = getTileStatus(key);
 							const color = status ? statusColors[status] : undefined;
