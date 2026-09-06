@@ -247,8 +247,8 @@ export function renderPfgChart(
 		const needlePath =
 			'M -34,-3 L -40,-1 A 1,1,0,0,0,-40,1 L -34,3 A 2,2,0,0,0,-34,-3 Z';
 		return svg`<svg viewBox="-50 -50 100 70" style="width:100%;height:100%;">
-															<path d="M -40 0 A 40 40 0 0 1 40 0" fill="none" stroke="${chartDef.bg ?? 'rgba(255,255,255,0.15)'}" stroke-width="12" stroke-linecap="butt" />
-															${segmentArcs}
+															<g style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));"><path d="M -40 0 A 40 40 0 0 1 40 0" fill="none" stroke="${chartDef.bg ?? 'rgba(255,255,255,0.15)'}" stroke-width="12" stroke-linecap="butt" />
+															${segmentArcs}</g>
 															<path d="${needlePath}" fill="#fff" stroke="rgba(0,0,0,0.6)" stroke-width="1" transform="rotate(${valueAngle})" style="transform-origin:0 0;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));" />
 															<text x="0" y="2" text-anchor="middle" dominant-baseline="middle" font-size="14" font-weight="bold" fill="#fff" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));;transform:translateY(-10px)">${displayVal}</text>
 															${chartDef.label ? svg`<text x="0" y="16" text-anchor="middle" font-size="9" font-weight="bold" fill="#aaa" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">${chartDef.label}</text>` : ''}
@@ -265,7 +265,7 @@ export function renderPfgChart(
 															<defs>
 																${chartDef.gradient ? svg`<linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${chartDef.gradient.from}" /><stop offset="100%" stop-color="${chartDef.gradient.to}" /></linearGradient>` : ''}
 															</defs>
-															<g transform="rotate(-90 50 50)">
+															<g transform="rotate(-90 50 50)" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">
 																<circle cx="50" cy="50" r="${gaugeR}" fill="none" stroke="${gaugeBg}" stroke-width="12" />
 																<circle cx="50" cy="50" r="${gaugeR}" fill="none" stroke="${gaugeStroke}" stroke-width="12" stroke-dasharray="${gaugeCirc}" stroke-dashoffset="${off}" stroke-linecap="round" />
 															</g>
