@@ -112,11 +112,14 @@ export function renderPfgChart(
 					s.color ?? '#00E676',
 				);
 				const base = i * rowH;
+				const fontSize = Math.min(18, rowH * 0.5);
+				const barY = base + rowH * 0.48;
+				const barH = rowH * 0.5;
 				return svg`
-					<text x="4" y="${base + rowH * 0.3}" font-size="${Math.min(10, rowH * 0.28)}" font-weight="bold" fill="#ccc" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">${s.label ?? ''}</text>
-					<text x="96" y="${base + rowH * 0.3}" text-anchor="end" font-size="${Math.min(10, rowH * 0.28)}" font-weight="bold" fill="#fff" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">${sVal}</text>
-					<rect x="4" y="${base + rowH * 0.4}" width="92" height="${rowH * 0.45}" rx="3" fill="none" stroke="${s.bg ?? 'rgba(255,255,255,0.15)'}" stroke-width="1.5" />
-					<rect x="5.5" y="${base + rowH * 0.4 + 1.5}" width="${89 * sPct}" height="${rowH * 0.45 - 3}" rx="2" fill="${sColor}" />
+					<text x="1" y="${base + rowH * 0.32}" font-size="${fontSize}" font-weight="bold" fill="#eee" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">${s.label ?? ''}</text>
+					<text x="99" y="${base + rowH * 0.32}" text-anchor="end" font-size="${fontSize}" font-weight="bold" fill="#fff" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">${sVal}</text>
+					<rect x="1" y="${barY}" width="98" height="${barH}" rx="3" fill="none" stroke="${s.bg ?? 'rgba(255,255,255,0.25)'}" stroke-width="1.5" />
+					<rect x="2.5" y="${barY + 1.5}" width="${95 * sPct}" height="${barH - 3}" rx="2" fill="${sColor}" />
 				`;
 			})}
 		</svg>`;
