@@ -69,6 +69,7 @@ export function renderPfgChart(
 	chartDef: PfgChartDef,
 	c: { row: number; col: number },
 	hass?: HomeAssistant,
+	suppressLabel = false,
 ): unknown {
 	if (!chartDef || !hass) return undefined;
 	if (chartDef.type === 'cycle') {
@@ -114,7 +115,7 @@ export function renderPfgChart(
 															<rect x="20" y="15" width="60" height="70" rx="4" fill="none" stroke="${chartDef.bg ?? 'rgba(255,255,255,0.15)'}" stroke-width="2" />
 															<rect x="24" y="${85 - barHeight}" width="52" height="${barHeight}" rx="2" fill="${activeColor}" />
 															<text x="50" y="95" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="bold" fill="#fff" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));;transform:translateY(-10px)">${displayVal}</text>
-															${chartDef.label ? svg`<text x="50" y="8" text-anchor="middle" font-size="8" font-weight="bold" fill="#aaa" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">${chartDef.label}</text>` : ''}
+															${chartDef.label && !suppressLabel ? svg`<text x="50" y="8" text-anchor="middle" font-size="8" font-weight="bold" fill="#aaa" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">${chartDef.label}</text>` : ''}
 														</svg>`;
 	} else if (chartDef.type === 'history') {
 		const entityIds = ents;
@@ -277,7 +278,7 @@ export function renderPfgChart(
 															${segmentArcs}</g>
 															<path d="${needlePath}" fill="#fff" stroke="rgba(0,0,0,0.6)" stroke-width="1" transform="rotate(${valueAngle})" style="transform-origin:0 0;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));" />
 															<text x="0" y="2" text-anchor="middle" dominant-baseline="middle" font-size="14" font-weight="bold" fill="#fff" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));;transform:translateY(-10px)">${displayVal}</text>
-															${chartDef.label ? svg`<text x="0" y="16" text-anchor="middle" font-size="9" font-weight="bold" fill="#aaa" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">${chartDef.label}</text>` : ''}
+															${chartDef.label && !suppressLabel ? svg`<text x="0" y="16" text-anchor="middle" font-size="9" font-weight="bold" fill="#aaa" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">${chartDef.label}</text>` : ''}
 														</svg>`;
 	} else {
 		const gaugeR = 40;
@@ -296,7 +297,7 @@ export function renderPfgChart(
 																<circle cx="50" cy="50" r="${gaugeR}" fill="none" stroke="${gaugeStroke}" stroke-width="12" stroke-dasharray="${gaugeCirc}" stroke-dashoffset="${off}" stroke-linecap="round" />
 															</g>
 															<text x="50" y="48" text-anchor="middle" dominant-baseline="middle" font-size="16" font-weight="bold" fill="#fff" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));;transform:translateY(-10px)">${displayVal}</text>
-															${chartDef.label ? svg`<text x="50" y="70" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">${chartDef.label}</text>` : ''}
+															${chartDef.label && !suppressLabel ? svg`<text x="50" y="70" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">${chartDef.label}</text>` : ''}
 														</svg>`;
 	}
 }
@@ -335,6 +336,7 @@ export class PfgCycleCard extends LitElement {
 	protected render() {
 		const step = this.steps?.[this._index] || [];
 		const charts = Array.isArray(step) ? step : [step];
+		const stepLabel = charts.find((d) => d?.label)?.label;
 		return html`<div style="position:absolute;inset:0;pointer-events:none;">
 			${charts.map((chartDef) => {
 				const pos = chartDef.position || 'center';
@@ -343,9 +345,17 @@ export class PfgCycleCard extends LitElement {
 						? 'position:absolute;bottom:2%;left:2.5%;width:95%;height:35%;'
 						: 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:95%;height:70%;';
 				return html`<div style="${style}">
-					${renderPfgChart(chartDef, this.c!, this.hass)}
+					${renderPfgChart(chartDef, this.c!, this.hass, true)}
 				</div>`;
 			})}
+			${
+				stepLabel
+					? html`<span
+							style="position:absolute;left:50%;top:calc(55% - 14px);transform:translate(-50%,-50%);z-index:2;font-weight:bold;font-size:min(1.6vw,11px);color:#ddd;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;"
+							>${stepLabel}</span
+						>`
+					: ''
+			}
 		</div>`;
 	}
 }
