@@ -37,11 +37,7 @@ export const pfgCard = (
 		}
 	}
 	const inverterKey = config.pfg_inverter_at || centerKey;
-	if (
-		!tileImages[inverterKey] &&
-		!config.pfg_charts?.[inverterKey] &&
-		inverterImg
-	) {
+	if (!tileImages[inverterKey] && inverterImg) {
 		// Default centre tile shows the inverter image for the selected model.
 		tileImages[inverterKey] = inverterImg;
 		inverterTiles.add(inverterKey);
@@ -203,7 +199,9 @@ export const pfgCard = (
 							const radius = config.pfg_radius?.[key];
 							const tileBorder = config.pfg_border?.[key];
 							const imgSrc = tileImages[key];
-							const imgFit = inverterTiles.has(key) ? 'contain' : 'cover';
+							const imgFit =
+								config.pfg_image_fit?.[key] ||
+								(inverterTiles.has(key) ? 'contain' : 'cover');
 							const imgZoom = inverterTiles.has(key) ? 1 : imageZoom;
 							const label = hideGrid ? undefined : tileLabels[key];
 							const icon = tileIcons[key];

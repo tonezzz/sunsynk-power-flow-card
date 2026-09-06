@@ -133,6 +133,7 @@ export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 	>;
 	pfg_labels?: Record<string, string>;
 	pfg_label_pos?: Record<string, string>;
+	pfg_image_fit?: Record<string, 'contain' | 'cover' | 'fill'>;
 	pfg_status?: Record<
 		string,
 		'online' | 'offline' | 'running' | 'stopped' | 'warning' | 'unknown'
