@@ -59,7 +59,7 @@ export enum AutarkyType {
 }
 
 export interface PfgChartDef {
-	type: 'gauge' | 'bar' | 'history';
+	type: 'gauge' | 'bar' | 'history' | 'cycle';
 	entity?: string;
 	value?: number;
 	scale?: number;
@@ -75,8 +75,10 @@ export interface PfgChartDef {
 	unit?: string;
 	label?: string;
 	needle?: boolean;
-	position?: 'center' | 'bottom';
+	position?: 'center' | 'bottom' | 'cycle';
 	segments?: { from: number; color: string }[];
+	steps?: PfgChartDef[][];
+	interval?: number;
 }
 
 export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {

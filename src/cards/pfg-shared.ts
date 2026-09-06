@@ -1,5 +1,6 @@
-import { html, svg } from 'lit';
+import { LitElement, html, svg } from 'lit';
 import { until } from 'lit/directives/until.js';
+import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { PfgChartDef } from '../types';
 
@@ -70,6 +71,14 @@ export function renderPfgChart(
 	hass?: HomeAssistant,
 ): unknown {
 	if (!chartDef || !hass) return undefined;
+	if (chartDef.type === 'cycle') {
+		return html`<pfg-cycle
+			.steps="${chartDef.steps}"
+			.c="${c}"
+			.hass="${hass}"
+			.interval="${chartDef.interval ?? 3}"
+		></pfg-cycle>`;
+	}
 
 	const st = chartDef.entity ? hass.states[chartDef.entity] : undefined;
 	const raw = st ? st.state : (chartDef.value ?? 0);
@@ -263,5 +272,54 @@ export function renderPfgChart(
 															<text x="50" y="48" text-anchor="middle" dominant-baseline="middle" font-size="16" font-weight="bold" fill="#fff">${displayVal}</text>
 															${chartDef.label ? svg`<text x="50" y="70" text-anchor="middle" font-size="10" font-weight="bold" fill="#fff">${chartDef.label}</text>` : ''}
 														</svg>`;
+	}
+}
+
+@customElement('pfg-cycle')
+export class PfgCycleCard extends LitElement {
+	@property({ attribute: false })
+	steps?: PfgChartDef[][];
+
+	@property({ attribute: false })
+	c?: { row: number; col: number };
+
+	@property({ attribute: false })
+	hass?: HomeAssistant;
+
+	@property({ type: Number })
+	interval = 3;
+
+	private _index = 0;
+	private _timer?: number;
+
+	connectedCallback() {
+		super.connectedCallback();
+		this._timer = window.setInterval(() => {
+			this._index =
+				(this._index + 1) % (this.steps?.length ? this.steps.length : 1);
+			this.requestUpdate();
+		}, this.interval * 1000);
+	}
+
+	disconnectedCallback() {
+		if (this._timer) window.clearInterval(this._timer);
+		super.disconnectedCallback();
+	}
+
+	protected render() {
+		const step = this.steps?.[this._index] || [];
+		const charts = Array.isArray(step) ? step : [step];
+		return html`<div style="position:absolute;inset:0;pointer-events:none;">
+			${charts.map((chartDef) => {
+				const pos = chartDef.position || 'center';
+				const style =
+					pos === 'bottom'
+						? 'position:absolute;bottom:2%;left:2.5%;width:95%;height:35%;'
+						: 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:95%;height:70%;';
+				return html`<div style="${style}">
+					${renderPfgChart(chartDef, this.c!, this.hass)}
+				</div>`;
+			})}
+		</div>`;
 	}
 }
