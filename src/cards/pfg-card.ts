@@ -192,6 +192,7 @@ export const pfgCard = (
 							if (covered.has(key)) return null;
 							const span = spans[key];
 							const radius = config.pfg_radius?.[key];
+							const tileBorder = config.pfg_border?.[key];
 							const imgSrc = tileImages[key];
 							const imgFit = inverterTiles.has(key) ? 'contain' : 'cover';
 							const imgZoom = inverterTiles.has(key) ? 1 : imageZoom;
@@ -261,7 +262,7 @@ export const pfgCard = (
 								return html`<div style="${style}">${i.tpl}</div>`;
 							});
 							const title = `Tile ${key}${status ? ` – ${status}` : ''}${entityState ? ` (${entityState})` : ''}`;
-							const cellStyle = `border:1px solid ${color || 'rgba(255,255,255,0.2)'};background:${color ? hexToRgba(color, 0.2) : 'rgba(255,255,255,0.05)'};display:flex;align-items:center;justify-content:center;font-size:min(1.5vw,10px);text-align:center;box-sizing:border-box;overflow:hidden;position:relative;${radius ? `border-radius:${radius};` : ''}${span && (span.rows > 1 || span.cols > 1) ? `grid-row:${c.row}/span ${span.rows};grid-column:${c.col}/span ${span.cols};` : ''}`;
+							const cellStyle = `border:${tileBorder || `1px solid ${color || 'rgba(255,255,255,0.2)'}`};background:${color ? hexToRgba(color, 0.2) : 'rgba(255,255,255,0.05)'};display:flex;align-items:center;justify-content:center;font-size:min(1.5vw,10px);text-align:center;box-sizing:border-box;overflow:hidden;position:relative;${radius ? `border-radius:${radius};` : ''}${span && (span.rows > 1 || span.cols > 1) ? `grid-row:${c.row}/span ${span.rows};grid-column:${c.col}/span ${span.cols};` : ''}`;
 							return html`
 								<div
 									class="pfg-cell"

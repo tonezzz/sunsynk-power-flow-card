@@ -125,6 +125,7 @@ export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 	}>;
 	pfg_spans?: Record<string, number | string>;
 	pfg_radius?: Record<string, string>;
+	pfg_border?: Record<string, string>;
 	pfg_sums?: Record<
 		string,
 		{ entities: string[]; scale?: number; decimals?: number; unit?: string }
