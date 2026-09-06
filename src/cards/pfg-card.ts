@@ -28,14 +28,15 @@ export const pfgCard = (
 	const center = Math.floor(gridSize / 2) + 1;
 	const centerKey = `${center},${center}`;
 	const inverterTiles = new Set<string>();
+	const inverterKey = config.pfg_inverter_at || centerKey;
 	if (
-		!tileImages[centerKey] &&
-		!config.pfg_charts?.[centerKey] &&
+		!tileImages[inverterKey] &&
+		!config.pfg_charts?.[inverterKey] &&
 		inverterImg
 	) {
 		// Default centre tile shows the inverter image for the selected model.
-		tileImages[centerKey] = inverterImg;
-		inverterTiles.add(centerKey);
+		tileImages[inverterKey] = inverterImg;
+		inverterTiles.add(inverterKey);
 	}
 
 	// Tile label map: key = "r,c" (1-indexed). Use `pfg_labels` in the config.

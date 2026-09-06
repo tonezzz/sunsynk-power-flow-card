@@ -95,6 +95,7 @@ export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 	card_height?: string;
 	card_width?: string;
 	pfg_grid_size?: number;
+	pfg_inverter_at?: string;
 	pfg_grid_width?: string;
 	pfg_images?: Record<string, string>;
 	pfg_icons?: Record<string, string>;
