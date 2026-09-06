@@ -13,10 +13,10 @@ import {
 import { localize } from '../localize/localize';
 import { Utils } from '../helpers/utils';
 import { BatteryIconManager } from '../helpers/battery-icon-manager';
-import { CustomEntity } from '../inverters/dto/custom-entity';
 import { icons } from '../helpers/icons';
 import { InverterFactory } from '../inverters/inverter-factory';
 import type { SunsynkPowerFlowCard } from '../index';
+import { calculateTotalSeconds, getBatteryDirection } from './helpers';
 
 /**
  * Data preparation for all card variants: resolves entities, computes derived
@@ -28,32 +28,6 @@ export function buildData(card: SunsynkPowerFlowCard): {
 	inverterImg: string;
 } {
 	const config = card._config;
-
-	// Helper: convert a battery current-direction entity to a signed direction.
-	// Returns +1 when discharging, -1 when charging, and null when unknown.
-	const getBatteryDirection = (state: CustomEntity): number | null => {
-		const raw = state?.toString()?.toLowerCase().trim();
-		if (!raw || raw === 'unknown' || raw === 'unavailable' || raw === 'none') {
-			return null;
-		}
-		if (
-			raw === 'discharging' ||
-			raw === 'discharge' ||
-			raw.includes('discharg') ||
-			raw === 'empty'
-		) {
-			return 1;
-		}
-		if (
-			raw === 'charging' ||
-			raw === 'charge' ||
-			raw.includes('charg') ||
-			raw === 'full'
-		) {
-			return -1;
-		}
-		return null;
-	};
 
 	//Energy
 	const stateDayBatteryDischarge = card.getEntity(
@@ -1357,32 +1331,6 @@ export function buildData(card: SunsynkPowerFlowCard): {
 	const batteryTotalEnergy = batteryEnergy + battery2Energy;
 
 	if (config.show_battery || batteryEnergy !== 0 || battery2Energy !== 0) {
-		const calculateTotalSeconds = (
-			soc,
-			shutdown,
-			capacity,
-			energy,
-			power,
-			invertFlow,
-		) => {
-			if (power === 0) {
-				return ((soc.toNum(0) - shutdown) / 100) * energy * 60 * 60;
-			} else if (invertFlow ? power < 0 : power > 0) {
-				return (
-					((((soc.toNum(0) - capacity) / 100) * energy) / Math.abs(power)) *
-					60 *
-					60
-				);
-			} else if (invertFlow ? power > 0 : power < 0) {
-				return (
-					((((capacity - soc.toNum(0)) / 100) * energy) / Math.abs(power)) *
-					60 *
-					60
-				);
-			}
-			return 0; // Default case
-		};
-
 		let totalSeconds = 0;
 		if (batteryEnergy !== 0) {
 			totalSeconds = calculateTotalSeconds(
