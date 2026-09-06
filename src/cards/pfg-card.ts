@@ -307,9 +307,11 @@ export const pfgCard = (
 								const style =
 									pos === 'bottom'
 										? 'position:absolute;bottom:2%;left:2.5%;width:95%;height:35%;'
-										: pos === 'cycle'
-											? 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;'
-											: 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:95%;height:70%;';
+										: pos === 'top'
+											? 'position:absolute;top:6%;left:2.5%;width:95%;height:56%;'
+											: pos === 'cycle'
+												? 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;'
+												: 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:95%;height:70%;';
 								return html`<div style="${style}">${i.tpl}</div>`;
 							});
 							const title = `Tile ${key}${status ? ` – ${status}` : ''}${entityState ? ` (${entityState})` : ''}`;

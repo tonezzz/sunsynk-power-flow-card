@@ -81,6 +81,47 @@ export function renderPfgChart(
 		></pfg-cycle>`;
 	}
 
+	if (chartDef.type === 'bars') {
+		const series = chartDef.series ?? [];
+		if (!series.length) return undefined;
+		const rowH = 100 / series.length;
+		return svg`<svg viewBox="0 0 100 100" style="width:100%;height:100%;">
+			${series.map((s, i) => {
+				const sEnts: string[] =
+					s.entities && s.entities.length
+						? s.entities
+						: s.entity
+							? [s.entity]
+							: [];
+				const raw = sEnts.length
+					? sEnts.reduce(
+							(sum, e) => sum + (parseFloat(hass.states[e]?.state) || 0),
+							0,
+						)
+					: parseFloat(String(s.value ?? 0)) || 0;
+				const sMin = s.min ?? 0;
+				const sMax = s.max ?? 100;
+				const sPct = Math.min(
+					Math.max(sMax > sMin ? (raw - sMin) / (sMax - sMin) : 0, 0),
+					1,
+				);
+				const sVal = `${(raw * (s.scale ?? 1)).toFixed(s.decimals ?? 0)}${s.unit ? ` ${s.unit}` : ''}`;
+				const sSegs = [...(s.segments || [])].sort((a, b) => a.from - b.from);
+				const sColor = sSegs.reduce(
+					(col, seg) => (raw >= seg.from ? seg.color : col),
+					s.color ?? '#00E676',
+				);
+				const base = i * rowH;
+				return svg`
+					<text x="4" y="${base + rowH * 0.3}" font-size="${Math.min(10, rowH * 0.28)}" font-weight="bold" fill="#ccc" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">${s.label ?? ''}</text>
+					<text x="96" y="${base + rowH * 0.3}" text-anchor="end" font-size="${Math.min(10, rowH * 0.28)}" font-weight="bold" fill="#fff" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">${sVal}</text>
+					<rect x="4" y="${base + rowH * 0.4}" width="92" height="${rowH * 0.45}" rx="3" fill="none" stroke="${s.bg ?? 'rgba(255,255,255,0.15)'}" stroke-width="1.5" />
+					<rect x="5.5" y="${base + rowH * 0.4 + 1.5}" width="${89 * sPct}" height="${rowH * 0.45 - 3}" rx="2" fill="${sColor}" />
+				`;
+			})}
+		</svg>`;
+	}
+
 	const ents: string[] =
 		chartDef.entities && chartDef.entities.length
 			? chartDef.entities

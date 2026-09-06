@@ -59,7 +59,7 @@ export enum AutarkyType {
 }
 
 export interface PfgChartDef {
-	type: 'gauge' | 'bar' | 'history' | 'cycle';
+	type: 'gauge' | 'bar' | 'bars' | 'history' | 'cycle';
 	entity?: string;
 	entities?: string[];
 	value?: number;
@@ -77,8 +77,9 @@ export interface PfgChartDef {
 	label?: string;
 	orientation?: 'vertical' | 'horizontal';
 	needle?: boolean;
-	position?: 'center' | 'bottom' | 'cycle';
+	position?: 'center' | 'bottom' | 'top' | 'cycle';
 	segments?: { from: number; color: string }[];
+	series?: PfgChartDef[];
 	steps?: PfgChartDef[][];
 	interval?: number;
 }
