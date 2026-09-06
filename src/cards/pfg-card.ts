@@ -176,7 +176,9 @@ export const pfgCard = (
 	});
 
 	return html`
-		<ha-card style="width:${config.card_width || '100%'};display:block;">
+		<ha-card
+			style="width:${config.card_width || '100%'};display:block;${config.pfg_transparent ? 'background:transparent;box-shadow:none;border:none;' : ''}"
+		>
 			<div
 				class="container card"
 				style="width:100%;padding:8px;background:transparent;color:#fff;box-sizing:border-box;"

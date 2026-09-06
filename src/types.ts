@@ -138,6 +138,7 @@ export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 	pfg_value_labels?: Record<string, string>;
 	pfg_grid_cols?: number;
 	pfg_grid_rows?: number;
+	pfg_transparent?: boolean;
 	pfg_image_fit?: Record<string, 'contain' | 'cover' | 'fill'>;
 	pfg_status?: Record<
 		string,
