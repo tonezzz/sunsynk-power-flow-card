@@ -15,10 +15,12 @@ export const pfgCard = (
 	hass?: HomeAssistant,
 ) => {
 	const gridSize = config.pfg_grid_size || 10;
+	const gridCols = config.pfg_grid_cols || gridSize;
+	const gridRows = config.pfg_grid_rows || gridSize;
 
-	const cells = Array.from({ length: gridSize * gridSize }, (_, i) => {
-		const row = Math.floor(i / gridSize) + 1;
-		const col = (i % gridSize) + 1;
+	const cells = Array.from({ length: gridCols * gridRows }, (_, i) => {
+		const row = Math.floor(i / gridCols) + 1;
+		const col = (i % gridCols) + 1;
 		return { row, col };
 	});
 
@@ -107,33 +109,33 @@ export const pfgCard = (
 		const [key, side] = (s || '').split('@');
 		const { r, c } = parseCell(key);
 		const n = spans[key] || { rows: 1, cols: 1 };
-		const cx = ((c - 1 + n.cols / 2) / gridSize) * 100;
-		const cy = ((r - 1 + n.rows / 2) / gridSize) * 100;
+		const cx = ((c - 1 + n.cols / 2) / gridCols) * 100;
+		const cy = ((r - 1 + n.rows / 2) / gridRows) * 100;
 		switch (side) {
 			case 'top':
-				return { x: cx, y: ((r - 1) / gridSize) * 100 };
+				return { x: cx, y: ((r - 1) / gridRows) * 100 };
 			case 'bottom':
-				return { x: cx, y: ((r + n.rows - 1) / gridSize) * 100 };
+				return { x: cx, y: ((r + n.rows - 1) / gridRows) * 100 };
 			case 'left':
-				return { x: ((c - 1) / gridSize) * 100, y: cy };
+				return { x: ((c - 1) / gridCols) * 100, y: cy };
 			case 'right':
-				return { x: ((c + n.cols - 1) / gridSize) * 100, y: cy };
+				return { x: ((c + n.cols - 1) / gridCols) * 100, y: cy };
 			case 'topleft':
-				return { x: ((c - 1) / gridSize) * 100, y: ((r - 1) / gridSize) * 100 };
+				return { x: ((c - 1) / gridCols) * 100, y: ((r - 1) / gridRows) * 100 };
 			case 'topright':
 				return {
-					x: ((c + n.cols - 1) / gridSize) * 100,
-					y: ((r - 1) / gridSize) * 100,
+					x: ((c + n.cols - 1) / gridCols) * 100,
+					y: ((r - 1) / gridRows) * 100,
 				};
 			case 'bottomleft':
 				return {
-					x: ((c - 1) / gridSize) * 100,
-					y: ((r + n.rows - 1) / gridSize) * 100,
+					x: ((c - 1) / gridCols) * 100,
+					y: ((r + n.rows - 1) / gridRows) * 100,
 				};
 			case 'bottomright':
 				return {
-					x: ((c + n.cols - 1) / gridSize) * 100,
-					y: ((r + n.rows - 1) / gridSize) * 100,
+					x: ((c + n.cols - 1) / gridCols) * 100,
+					y: ((r + n.rows - 1) / gridRows) * 100,
 				};
 			default:
 				return { x: cx, y: cy };
@@ -190,7 +192,7 @@ export const pfgCard = (
 				}
 				<div style="position:relative;width:100%;">
 					<div
-						style="display:grid;grid-template-columns:repeat(${gridSize},1fr);grid-template-rows:repeat(${gridSize},1fr);gap:0;width:${config.pfg_grid_width || '100%'};height:auto;aspect-ratio:1/1;box-sizing:border-box;"
+						style="display:grid;grid-template-columns:repeat(${gridCols},1fr);grid-template-rows:repeat(${gridRows},1fr);gap:0;width:${config.pfg_grid_width || '100%'};height:auto;aspect-ratio:${gridCols}/${gridRows};box-sizing:border-box;"
 					>
 						${cells.map((c) => {
 							const key = `${c.row},${c.col}`;
