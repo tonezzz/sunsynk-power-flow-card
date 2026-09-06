@@ -122,7 +122,7 @@ export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 		max_power?: number;
 		invert?: boolean;
 	}>;
-	pfg_spans?: Record<string, number>;
+	pfg_spans?: Record<string, number | string>;
 	pfg_radius?: Record<string, string>;
 	pfg_sums?: Record<
 		string,

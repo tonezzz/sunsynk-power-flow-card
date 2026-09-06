@@ -66,13 +66,25 @@ export const pfgCard = (
 	};
 
 	// Tile spans: `pfg_spans` {"r,c": n} renders that tile as an n x n block;
+	// "RxC" (e.g. "2x3") renders an R-row by C-col rectangle.
 	// covered cells are skipped so they don't overlap the spanned tile.
-	const spans: Record<string, number> = config.pfg_spans || {};
+	const parseSpan = (v: number | string | undefined) => {
+		if (v == null) return { rows: 1, cols: 1 };
+		if (typeof v === 'number') return { rows: v, cols: v };
+		const m = String(v).match(/^(\d+)[x:,](\d+)$/);
+		return m
+			? { rows: parseInt(m[1], 10), cols: parseInt(m[2], 10) }
+			: { rows: 1, cols: 1 };
+	};
+	const spans: Record<string, { rows: number; cols: number }> = {};
+	Object.entries(config.pfg_spans || {}).forEach(([k, v]) => {
+		spans[k] = parseSpan(v);
+	});
 	const covered = new Set<string>();
 	Object.entries(spans).forEach(([k, n]) => {
 		const [r0, c0] = k.split(',').map((x) => parseInt(x, 10));
-		for (let i = 0; i < n; i++) {
-			for (let j = 0; j < n; j++) {
+		for (let i = 0; i < n.rows; i++) {
+			for (let j = 0; j < n.cols; j++) {
 				if (i || j) covered.add(`${r0 + i},${c0 + j}`);
 			}
 		}
@@ -89,34 +101,34 @@ export const pfgCard = (
 	const cellCenter = (s: string) => {
 		const [key, side] = (s || '').split('@');
 		const { r, c } = parseCell(key);
-		const n = spans[key] || 1;
-		const cx = ((c - 1 + n / 2) / gridSize) * 100;
-		const cy = ((r - 1 + n / 2) / gridSize) * 100;
+		const n = spans[key] || { rows: 1, cols: 1 };
+		const cx = ((c - 1 + n.cols / 2) / gridSize) * 100;
+		const cy = ((r - 1 + n.rows / 2) / gridSize) * 100;
 		switch (side) {
 			case 'top':
 				return { x: cx, y: ((r - 1) / gridSize) * 100 };
 			case 'bottom':
-				return { x: cx, y: ((r + n - 1) / gridSize) * 100 };
+				return { x: cx, y: ((r + n.rows - 1) / gridSize) * 100 };
 			case 'left':
 				return { x: ((c - 1) / gridSize) * 100, y: cy };
 			case 'right':
-				return { x: ((c + n - 1) / gridSize) * 100, y: cy };
+				return { x: ((c + n.cols - 1) / gridSize) * 100, y: cy };
 			case 'topleft':
 				return { x: ((c - 1) / gridSize) * 100, y: ((r - 1) / gridSize) * 100 };
 			case 'topright':
 				return {
-					x: ((c + n - 1) / gridSize) * 100,
+					x: ((c + n.cols - 1) / gridSize) * 100,
 					y: ((r - 1) / gridSize) * 100,
 				};
 			case 'bottomleft':
 				return {
 					x: ((c - 1) / gridSize) * 100,
-					y: ((r + n - 1) / gridSize) * 100,
+					y: ((r + n.rows - 1) / gridSize) * 100,
 				};
 			case 'bottomright':
 				return {
-					x: ((c + n - 1) / gridSize) * 100,
-					y: ((r + n - 1) / gridSize) * 100,
+					x: ((c + n.cols - 1) / gridSize) * 100,
+					y: ((r + n.rows - 1) / gridSize) * 100,
 				};
 			default:
 				return { x: cx, y: cy };
@@ -248,7 +260,7 @@ export const pfgCard = (
 								return html`<div style="${style}">${i.tpl}</div>`;
 							});
 							const title = `Tile ${key}${status ? ` – ${status}` : ''}${entityState ? ` (${entityState})` : ''}`;
-							const cellStyle = `border:1px solid ${color || 'rgba(255,255,255,0.2)'};background:${color ? hexToRgba(color, 0.2) : 'rgba(255,255,255,0.05)'};display:flex;align-items:center;justify-content:center;font-size:min(1.5vw,10px);text-align:center;box-sizing:border-box;overflow:hidden;position:relative;${radius ? `border-radius:${radius};` : ''}${span ? `grid-row:${c.row}/span ${span};grid-column:${c.col}/span ${span};` : ''}`;
+							const cellStyle = `border:1px solid ${color || 'rgba(255,255,255,0.2)'};background:${color ? hexToRgba(color, 0.2) : 'rgba(255,255,255,0.05)'};display:flex;align-items:center;justify-content:center;font-size:min(1.5vw,10px);text-align:center;box-sizing:border-box;overflow:hidden;position:relative;${radius ? `border-radius:${radius};` : ''}${span && (span.rows > 1 || span.cols > 1) ? `grid-row:${c.row}/span ${span.rows};grid-column:${c.col}/span ${span.cols};` : ''}`;
 							return html`
 								<div
 									class="pfg-cell"
