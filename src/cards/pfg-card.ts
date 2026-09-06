@@ -275,7 +275,7 @@ export const pfgCard = (
 							const labelOverlay = label
 								? html`<span
 										title="${title}"
-										style="position:absolute;left:50%;top:${config.pfg_label_pos?.[key] || '55%'};transform:translate(-50%,-50%);z-index:2;font-weight:bold;font-size:min(2vw,14px);color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;"
+										style="position:absolute;left:50%;top:${config.pfg_label_pos?.[key] || '55%'};transform:translate(-50%,-50%) translateY(-10px);z-index:2;font-weight:bold;font-size:min(2vw,14px);color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;"
 										>${label}</span
 									>`
 								: '';
