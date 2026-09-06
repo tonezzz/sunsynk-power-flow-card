@@ -148,6 +148,7 @@ export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 	pfg_grid_cols?: number;
 	pfg_grid_rows?: number;
 	pfg_transparent?: boolean;
+	pfg_fit_screen?: boolean | string; // cap grid width so it fits viewport height (no scroll); string = reserved px for header/margins
 	pfg_image_fit?: Record<string, 'contain' | 'cover' | 'fill'>;
 	pfg_status?: Record<
 		string,

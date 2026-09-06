@@ -234,7 +234,7 @@ export const pfgCard = (
 				}
 				<div style="position:relative;width:100%;">
 					<div
-						style="display:grid;grid-template-columns:repeat(${gridCols},1fr);grid-template-rows:repeat(${gridRows},1fr);gap:0;width:${config.pfg_grid_width || '100%'};height:auto;aspect-ratio:${gridCols}/${gridRows};box-sizing:border-box;"
+						style="display:grid;grid-template-columns:repeat(${gridCols},1fr);grid-template-rows:repeat(${gridRows},1fr);gap:0;width:${config.pfg_fit_screen ? `min(100%, calc((100vh - ${config.pfg_fit_screen === true ? '72px' : config.pfg_fit_screen}) * ${gridCols} / ${gridRows}))` : config.pfg_grid_width || '100%'};margin:${config.pfg_fit_screen ? '0 auto' : '0'};height:auto;aspect-ratio:${gridCols}/${gridRows};box-sizing:border-box;"
 					>
 						${cells.map((c) => {
 							const key = `${c.row},${c.col}`;
