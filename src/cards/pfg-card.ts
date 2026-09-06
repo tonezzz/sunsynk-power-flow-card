@@ -272,6 +272,13 @@ export const pfgCard = (
 							});
 							const title = `Tile ${key}${status ? ` – ${status}` : ''}${entityState ? ` (${entityState})` : ''}`;
 							const cellStyle = `border:${hideGrid ? 'none' : tileBorder || `1px solid ${color || 'rgba(255,255,255,0.2)'}`};background:${color ? hexToRgba(color, 0.2) : hideGrid ? 'transparent' : 'rgba(255,255,255,0.05)'};display:flex;align-items:center;justify-content:center;font-size:min(1.5vw,10px);text-align:center;box-sizing:border-box;overflow:hidden;position:relative;${radius ? `border-radius:${radius};` : ''}${span && (span.rows > 1 || span.cols > 1) ? `grid-row:${c.row}/span ${span.rows};grid-column:${c.col}/span ${span.cols};` : ''}`;
+							const labelOverlay = label
+								? html`<span
+										title="${title}"
+										style="position:absolute;left:50%;top:${config.pfg_label_pos?.[key] || '55%'};transform:translate(-50%,-50%);z-index:2;font-weight:bold;font-size:min(2vw,14px);color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;"
+										>${label}</span
+									>`
+								: '';
 							return html`
 								<div
 									class="pfg-cell"
@@ -281,47 +288,46 @@ export const pfgCard = (
 									style="${cellStyle}"
 									title="${title}"
 								>
+									${labelOverlay}
 									${
-										label
-											? html`<span title="${title}">${label}</span>`
-											: icon
-												? html`<ha-icon
-														icon="${icon}"
-														title="${title}"
-														style="--mdc-icon-size:60%;width:60%;height:60%;color:${color || '#fff'};"
-													></ha-icon>`
-												: imgSrc && chartOverlays.length
-													? html`<div
-															style="position:absolute;inset:0;z-index:0;"
+										icon
+											? html`<ha-icon
+													icon="${icon}"
+													title="${title}"
+													style="--mdc-icon-size:60%;width:60%;height:60%;color:${color || '#fff'};"
+												></ha-icon>`
+											: imgSrc && chartOverlays.length
+												? html`<div
+														style="position:absolute;inset:0;z-index:0;"
+													>
+														<img
+															src="${imgSrc}"
+															alt="Tile ${key}"
+															title="${title}"
+															style="position:absolute;inset:0;width:100%;height:100%;object-fit:${imgFit};transform:scale(${imgZoom});pointer-events:none;"
+														/>
+														<div
+															style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:1;"
 														>
-															<img
-																src="${imgSrc}"
-																alt="Tile ${key}"
-																title="${title}"
-																style="position:absolute;inset:0;width:100%;height:100%;object-fit:${imgFit};transform:scale(${imgZoom});pointer-events:none;"
-															/>
-															<div
-																style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:1;"
-															>
-																${chartOverlays}
-															</div>
-														</div>`
-													: imgSrc
-														? html`<img
-																src="${imgSrc}"
-																alt="Tile ${key}"
-																title="${title}"
-																style="width:100%;height:100%;object-fit:${imgFit};transform:scale(${imgZoom});pointer-events:none;"
-															/>`
-														: chartOverlays.length
-															? chartOverlays
-															: valueText || sumText
-																? html`<span title="${title}"
-																		>${valueText || sumText}</span
-																	>`
-																: hideGrid
-																	? ''
-																	: html`r${c.row}:c${c.col}`
+															${chartOverlays}
+														</div>
+													</div>`
+												: imgSrc
+													? html`<img
+															src="${imgSrc}"
+															alt="Tile ${key}"
+															title="${title}"
+															style="width:100%;height:100%;object-fit:${imgFit};transform:scale(${imgZoom});pointer-events:none;"
+														/>`
+													: chartOverlays.length
+														? chartOverlays
+														: valueText || sumText
+															? html`<span title="${title}"
+																	>${valueText || sumText}</span
+																>`
+															: hideGrid
+																? ''
+																: html`r${c.row}:c${c.col}`
 									}
 								</div>
 							`;
