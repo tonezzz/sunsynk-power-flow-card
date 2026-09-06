@@ -74,9 +74,27 @@ export const pfgCard = (
 
 	// Tile spans: `pfg_spans` {"r,c": n} renders that tile as an n x n block;
 	// "RxC" (e.g. "2x3") renders an R-row by C-col rectangle.
+	// Responsive form: {"square":"3x3","portrait":"2x3","landscape":"3x2"}
+	// is resolved from the viewport aspect ratio.
 	// covered cells are skipped so they don't overlap the spanned tile.
-	const parseSpan = (v: number | string | undefined) => {
+	const pickOrient = () => {
+		const w = globalThis.innerWidth || 1;
+		const h = globalThis.innerHeight || 1;
+		const ratio = w / h;
+		return Math.abs(ratio - 1) < 0.2
+			? 'square'
+			: ratio < 1
+				? 'portrait'
+				: 'landscape';
+	};
+	const parseSpan = (v: unknown): { rows: number; cols: number } => {
 		if (v == null) return { rows: 1, cols: 1 };
+		if (typeof v === 'object') {
+			const o = v as Record<string, number | string>;
+			const orient = pickOrient();
+			const sel = o[orient] ?? o[orient[0]] ?? o.square ?? Object.values(o)[0];
+			return parseSpan(sel);
+		}
 		if (typeof v === 'number') return { rows: v, cols: v };
 		const m = String(v).match(/^(\d+)[x:,](\d+)$/);
 		return m

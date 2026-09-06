@@ -75,6 +75,7 @@ export interface PfgChartDef {
 	decimals?: number;
 	unit?: string;
 	label?: string;
+	orientation?: 'vertical' | 'horizontal';
 	needle?: boolean;
 	position?: 'center' | 'bottom' | 'cycle';
 	segments?: { from: number; color: string }[];
@@ -125,7 +126,15 @@ export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 		max_power?: number;
 		invert?: boolean;
 	}>;
-	pfg_spans?: Record<string, number | string>;
+	pfg_spans?: Record<
+		string,
+		| number
+		| string
+		| Record<
+				'square' | 'portrait' | 'landscape' | 's' | 'p' | 'l',
+				number | string
+		  >
+	>;
 	pfg_radius?: Record<string, string>;
 	pfg_border?: Record<string, string>;
 	pfg_sums?: Record<

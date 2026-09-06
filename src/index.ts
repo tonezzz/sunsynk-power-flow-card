@@ -93,6 +93,7 @@ export class SunsynkPowerFlowCard extends LitElement {
 	// Visibility/animation management
 	private _intersection?: IntersectionObserver;
 	private _onVisibilityChange?: () => void;
+	private _onResize?: () => void;
 	private _animationsPaused = false;
 	private _isVisible = true;
 
@@ -231,11 +232,20 @@ export class SunsynkPowerFlowCard extends LitElement {
 			);
 			this._onVisibilityChange = undefined;
 		}
+		if (this._onResize) {
+			window.removeEventListener('resize', this._onResize);
+			this._onResize = undefined;
+		}
 		super.disconnectedCallback();
 	}
 
 	public connectedCallback(): void {
 		super.connectedCallback();
+		// Re-render on resize so responsive pfg_spans re-resolve
+		if (!this._onResize) {
+			this._onResize = () => this.requestUpdate();
+			window.addEventListener('resize', this._onResize);
+		}
 		// Observe visibility of the card element in the viewport
 		if (this._intersection) this._intersection.disconnect();
 		this._intersection = new IntersectionObserver(
