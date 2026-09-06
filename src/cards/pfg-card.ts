@@ -277,6 +277,7 @@ export const pfgCard = (
 										>${label}</span
 									>`
 								: '';
+							const valueLabel = config.pfg_value_labels?.[key];
 							const valueLabelOverlay = valueLabel
 								? html`<span
 										style="position:absolute;left:50%;top:${config.pfg_value_label_pos?.[key] || 'calc(55% - 14px)'};transform:translate(-50%,-50%);z-index:2;font-weight:bold;font-size:min(1.6vw,11px);color:#ddd;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;"
