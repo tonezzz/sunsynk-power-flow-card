@@ -28,6 +28,14 @@ export const pfgCard = (
 	const center = Math.floor(gridSize / 2) + 1;
 	const centerKey = `${center},${center}`;
 	const inverterTiles = new Set<string>();
+	// `pfg_images: {"r,c": "inverter"}` places the model's inverter image on any
+	// tile (rendered with contain fit), including tiles that carry charts.
+	for (const k of Object.keys(tileImages)) {
+		if (tileImages[k] === 'inverter' && inverterImg) {
+			tileImages[k] = inverterImg;
+			inverterTiles.add(k);
+		}
+	}
 	const inverterKey = config.pfg_inverter_at || centerKey;
 	if (
 		!tileImages[inverterKey] &&
