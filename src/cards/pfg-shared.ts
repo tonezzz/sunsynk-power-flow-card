@@ -368,7 +368,7 @@ export function renderPfgChart(
 			${ref((el) => {
 				void mountSurface3d(el, hass, chartDef);
 			})}
-			style="position:absolute;inset:0;"
+			style="position:absolute;inset:0;pointer-events:auto;z-index:2;"
 		></div>`;
 	}
 
