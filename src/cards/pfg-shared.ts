@@ -173,12 +173,12 @@ export function renderPfgChart(
 					preserveAspectRatio="none"
 					style="position:absolute;inset:0;width:100%;height:100%;"
 				>
+					const gap = chartDef.bar_gap ?? 0.15; const chartHeight =
+					chartDef.chart_height ?? 64; const trackH = Math.max(30,
+					Math.min(chartHeight, 90)); const trackY = (100 - trackH) / 2;
 					${items.map((r) => {
-						const gap = chartDef.bar_gap ?? 0.15;
 						const x = r.i * colW + colW * gap;
 						const w = colW * (1 - 2 * gap);
-						const trackY = 16;
-						const trackH = 64;
 						const fillH = trackH * r.sPct;
 						return svg`
 							<rect x="${x}" y="${trackY}" width="${w}" height="${trackH}" rx="3" fill="none" stroke="${r.sBg}" stroke-width="1.5" />
