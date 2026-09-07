@@ -142,8 +142,9 @@ export interface PfgSurface3dChartDef extends PfgBaseChartDef {
 	days?: number;
 	wireframe?: boolean;
 	auto_rotate?: boolean;
-	rotate_sensitivity?: number;
+	rotate_sensitivity?: number | [number, number];
 	zoom_sensitivity?: number;
+	center?: [number, number, number];
 }
 
 export type PfgChartDef =
