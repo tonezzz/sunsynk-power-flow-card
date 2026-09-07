@@ -6,6 +6,8 @@ import { SunsynkPowerFlowCard } from '../index';
 import { Percentage } from '../const';
 
 export function resolveEntities(card: SunsynkPowerFlowCard) {
+	const config = card._config;
+
 	//Energy
 	const stateDayBatteryDischarge = card.getEntity(
 		'entities.day_battery_discharge_71',

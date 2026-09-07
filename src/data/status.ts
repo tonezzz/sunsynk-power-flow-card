@@ -119,9 +119,9 @@ export function resolveStatuses(
 		batteryStatuses.forEach((_st, i) => {
 			if (foundFlags[i]) return;
 			const entityKey = i === 0 ? 'battery_status' : `battery${i + 1}_status`;
-			const entityCfg = (config.entities as Record<string, unknown>)?.[
-				entityKey
-			];
+			const entityCfg = (
+				config.entities as unknown as Record<string, unknown>
+			)?.[entityKey];
 			if (entityCfg === 'none' || !entityCfg) {
 				result[colourKey(i)] = 'transparent';
 				result[msgKey(i)] = '';

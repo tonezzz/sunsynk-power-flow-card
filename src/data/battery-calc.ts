@@ -67,7 +67,7 @@ export function formatBatteryRuntime(
 		capacity,
 		energy,
 		power,
-		invertFlow,
+		invertFlow === true,
 	);
 	const t = new Date(Date.now() + totalSeconds * 1000);
 	const formattedTime = `${t.getHours().toString().padStart(2, '0')}:${t
