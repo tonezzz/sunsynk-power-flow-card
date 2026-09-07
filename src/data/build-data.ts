@@ -1,7 +1,16 @@
 /* eslint-disable no-useless-assignment -- block moved verbatim from index.ts render(); the flagged stores are pre-existing dead writes, not new logic */
-import { DataDto, InverterModel, InverterSettings } from '../types';
+import { resolveEntities } from './entities';
+import { resolveInverterProg } from './timer';
 import {
-	Percentage,
+	calcBatteryCapacity,
+	formatBatteryRuntime,
+	isBatteryFloating,
+	pickBatteryColour,
+} from './battery-calc';
+import type { CustomEntity } from '../inverters/dto/custom-entity';
+import { resolveStatuses } from './status';
+import { DataDto, InverterModel } from '../types';
+import {
 	valid3phase,
 	validaux,
 	validauxLoads,
@@ -10,13 +19,12 @@ import {
 	validLoadValues,
 	validnonLoadValues,
 } from '../const';
-import { localize } from '../localize/localize';
 import { Utils } from '../helpers/utils';
 import { BatteryIconManager } from '../helpers/battery-icon-manager';
 import { icons } from '../helpers/icons';
 import { InverterFactory } from '../inverters/inverter-factory';
 import type { SunsynkPowerFlowCard } from '../index';
-import { calculateTotalSeconds, getBatteryDirection } from './helpers';
+import { getBatteryDirection } from './helpers';
 
 /**
  * Data preparation for all card variants: resolves entities, computes derived
@@ -29,337 +37,145 @@ export function buildData(card: SunsynkPowerFlowCard): {
 } {
 	const config = card._config;
 
-	//Energy
-	const stateDayBatteryDischarge = card.getEntity(
-		'entities.day_battery_discharge_71',
-	);
-	const stateDayBatteryCharge = card.getEntity(
-		'entities.day_battery_charge_70',
-	);
-	const stateDayBattery2Discharge = card.getEntity(
-		'entities.day_battery2_discharge_71',
-	);
-	const stateDayBattery2Charge = card.getEntity(
-		'entities.day_battery2_charge_70',
-	);
-	const _stateDayBattery3Discharge = card.getEntity(
-		'entities.day_battery3_discharge_71',
-	);
-	const _stateDayBattery3Charge = card.getEntity(
-		'entities.day_battery3_charge_70',
-	);
-	const _stateDayBattery4Discharge = card.getEntity(
-		'entities.day_battery4_discharge_71',
-	);
-	const _stateDayBattery4Charge = card.getEntity(
-		'entities.day_battery4_charge_70',
-	);
-	const stateDayLoadEnergy = card.getEntity('entities.day_load_energy_84');
-	const stateDayGridImport = card.getEntity('entities.day_grid_import_76');
-	const stateDayPVEnergy = card.getEntity('entities.day_pv_energy_108');
-	const stateDayGridExport = card.getEntity('entities.day_grid_export_77');
-	const stateDayAuxEnergy = card.getEntity('entities.day_aux_energy');
-
-	//Inverter
-	const stateInverterVoltage = card.getEntity('entities.inverter_voltage_154');
-	const stateLoadFrequency = card.getEntity('entities.load_frequency_192');
-	const stateInverterCurrent = card.getEntity('entities.inverter_current_164');
-	const stateInverterStatus = card.getEntity('entities.inverter_status_59', {
-		state: '',
-	});
-	const stateInverterPower = card.getEntity('entities.inverter_power_175');
-	const statePriorityLoad = card.getEntity('entities.priority_load_243', {
-		state: config.entities.priority_load_243?.toString() ?? 'false',
-	});
-	const stateUseTimer = card.getEntity('entities.use_timer_248', {
-		state: config.entities.use_timer_248?.toString() ?? 'false',
-	});
-	const stateDCTransformerTemp = card.getEntity(
-		'entities.dc_transformer_temp_90',
-		{ state: '' },
-	);
-	const stateRadiatorTemp = card.getEntity('entities.radiator_temp_91', {
-		state: '',
-	});
-	const stateInverterVoltageL2 = card.getEntity(
-		'entities.inverter_voltage_L2',
-		{ state: '' },
-	);
-	const stateInverterVoltageL3 = card.getEntity(
-		'entities.inverter_voltage_L3',
-		{ state: '' },
-	);
-	const stateInverterCurrentL2 = card.getEntity(
-		'entities.inverter_current_L2',
-		{ state: '' },
-	);
-	const stateInverterCurrentL3 = card.getEntity(
-		'entities.inverter_current_L3',
-		{ state: '' },
-	);
-	const stateEnvironmentTemp = card.getEntity('entities.environment_temp', {
-		state: '',
-	});
-
-	//Battery 1
-	const stateBatteryVoltage = card.getEntity('entities.battery_voltage_183');
-	const stateBatterySoc = card.getEntity(
-		'entities.battery_soc_184',
-		null,
-		config.battery.soc_decimal_places,
-		Percentage.PERCENTAGE,
-	);
-	const stateBatteryPower = card.getEntity('entities.battery_power_190');
-	const stateBatteryCurrent = card.getEntity('entities.battery_current_191');
-	const stateBatteryTemp = card.getEntity('entities.battery_temp_182', {
-		state: '',
-	});
-	const stateBatteryStatus = card.getEntity('entities.battery_status', {
-		state: '',
-	});
-	const stateBatteryCurrentDirection = card.getEntity(
-		'entities.battery_current_direction',
-		{ state: '' },
-	);
-	const stateBatteryRatedCapacity = card.getEntity(
-		'entities.battery_rated_capacity',
-		{ state: '' },
-	);
-	const stateShutdownSOC = card.getEntity('battery.shutdown_soc', {
-		state: config.battery.shutdown_soc?.toString() ?? '',
-	});
-	const stateShutdownSOCOffGrid = card.getEntity(
-		'battery.shutdown_soc_offgrid',
-		{
-			state: config.battery.shutdown_soc_offgrid?.toString() ?? '',
-		},
-	);
-	const stateBatterySOH = card.getEntity('entities.battery_soh', {
-		state: '',
-	});
-	const stateSOCEndOfCharge = card.getEntity('battery.soc_end_of_charge', {
-		state: config.battery.soc_end_of_charge?.toString() ?? '',
-	});
-
-	//Battery 2
-	const stateBattery2Voltage = card.getEntity('entities.battery2_voltage_183');
-	const stateBattery2Soc = card.getEntity(
-		'entities.battery2_soc_184',
-		null,
-		config.battery2.soc_decimal_places,
-		Percentage.PERCENTAGE,
-	);
-	const stateBattery2Power = card.getEntity('entities.battery2_power_190');
-	const stateBattery2Current = card.getEntity('entities.battery2_current_191');
-	const stateBattery2Temp = card.getEntity('entities.battery2_temp_182', {
-		state: '',
-	});
-	const stateBattery2Status = card.getEntity('entities.battery2_status', {
-		state: '',
-	});
-	const stateBattery2CurrentDirection = card.getEntity(
-		'entities.battery2_current_direction',
-		{ state: '' },
-	);
-	const stateBattery2RatedCapacity = card.getEntity(
-		'entities.battery2_rated_capacity',
-		{ state: '' },
-	);
-	const stateShutdownSOC2 = card.getEntity('battery2.shutdown_soc', {
-		state: config.battery2.shutdown_soc?.toString() ?? '',
-	});
-	const stateShutdownSOCOffGrid2 = card.getEntity(
-		'battery2.shutdown_soc_offgrid',
-		{
-			state: config.battery2.shutdown_soc_offgrid?.toString() ?? '',
-		},
-	);
-	const stateBattery2SOH = card.getEntity('entities.battery2_soh', {
-		state: '',
-	});
-	const stateSOCEndOfCharge2 = card.getEntity('battery2.soc_end_of_charge', {
-		state: config.battery2.soc_end_of_charge?.toString() ?? '',
-	});
-
-	//Battery 3
-	const stateBattery3Voltage = card.getEntity('entities.battery3_voltage_183');
-	const stateBattery3Soc = card.getEntity(
-		'entities.battery3_soc_184',
-		null,
-		config.battery3.soc_decimal_places,
-		Percentage.PERCENTAGE,
-	);
-	const stateBattery3Power = card.getEntity('entities.battery3_power_190');
-	const stateBattery3Current = card.getEntity('entities.battery3_current_191');
-	const stateBattery3Temp = card.getEntity('entities.battery3_temp_182', {
-		state: '',
-	});
-	const stateBattery3Status = card.getEntity('entities.battery3_status', {
-		state: '',
-	});
-	const _stateBattery3CurrentDirection = card.getEntity(
-		'entities.battery3_current_direction',
-		{ state: '' },
-	);
-	const stateBattery3RatedCapacity = card.getEntity(
-		'entities.battery3_rated_capacity',
-		{ state: '' },
-	);
-	const stateShutdownSOC3 = card.getEntity('battery3.shutdown_soc', {
-		state: config.battery3.shutdown_soc?.toString() ?? '',
-	});
-	const stateShutdownSOCOffGrid3 = card.getEntity(
-		'battery3.shutdown_soc_offgrid',
-		{
-			state: config.battery3.shutdown_soc_offgrid?.toString() ?? '',
-		},
-	);
-	const stateBattery3SOH = card.getEntity('entities.battery3_soh', {
-		state: '',
-	});
-	const stateSOCEndOfCharge3 = card.getEntity('battery3.soc_end_of_charge', {
-		state: config.battery3.soc_end_of_charge?.toString() ?? '',
-	});
-
-	//Battery 4
-	const stateBattery4Voltage = card.getEntity('entities.battery4_voltage_183');
-	const stateBattery4Soc = card.getEntity(
-		'entities.battery4_soc_184',
-		null,
-		config.battery4.soc_decimal_places,
-		Percentage.PERCENTAGE,
-	);
-	const stateBattery4Power = card.getEntity('entities.battery4_power_190');
-	const stateBattery4Current = card.getEntity('entities.battery4_current_191');
-	const stateBattery4Temp = card.getEntity('entities.battery4_temp_182', {
-		state: '',
-	});
-	const stateBattery4Status = card.getEntity('entities.battery4_status', {
-		state: '',
-	});
-	const _stateBattery4CurrentDirection = card.getEntity(
-		'entities.battery4_current_direction',
-		{ state: '' },
-	);
-	const stateBattery4RatedCapacity = card.getEntity(
-		'entities.battery4_rated_capacity',
-		{ state: '' },
-	);
-	const stateShutdownSOC4 = card.getEntity('battery4.shutdown_soc', {
-		state: config.battery4.shutdown_soc?.toString() ?? '',
-	});
-	const stateShutdownSOCOffGrid4 = card.getEntity(
-		'battery4.shutdown_soc_offgrid',
-		{
-			state: config.battery4.shutdown_soc_offgrid?.toString() ?? '',
-		},
-	);
-	const stateBattery4SOH = card.getEntity('entities.battery4_soh', {
-		state: '',
-	});
-	const stateSOCEndOfCharge4 = card.getEntity('battery4.soc_end_of_charge', {
-		state: config.battery4.soc_end_of_charge?.toString() ?? '',
-	});
-
-	//Load
-	const stateEssentialPower = card.getEntity('entities.essential_power');
-	const stateAuxPower = card.getEntity('entities.aux_power_166');
-	const stateNonessentialPower = card.getEntity('entities.nonessential_power');
-	const stateNonessentialLoad1 = card.getEntity('entities.non_essential_load1');
-	const stateNonessentialLoad2 = card.getEntity('entities.non_essential_load2');
-	const stateNonessentialLoad3 = card.getEntity('entities.non_essential_load3');
-	const stateNonEssentialLoad1Extra = card.getEntity(
-		'entities.non_essential_load1_extra',
-	);
-	const stateNonEssentialLoad2Extra = card.getEntity(
-		'entities.non_essential_load2_extra',
-	);
-	const stateNonEssentialLoad3Extra = card.getEntity(
-		'entities.non_essential_load3_extra',
-	);
-	const stateEssentialLoad1 = card.getEntity('entities.essential_load1');
-	const stateEssentialLoad2 = card.getEntity('entities.essential_load2');
-	const stateEssentialLoad3 = card.getEntity('entities.essential_load3');
-	const stateEssentialLoad4 = card.getEntity('entities.essential_load4');
-	const stateEssentialLoad5 = card.getEntity('entities.essential_load5');
-	const stateEssentialLoad6 = card.getEntity('entities.essential_load6');
-	const stateAuxConnectedStatus = card.getEntity(
-		'entities.aux_connected_status',
-		{ state: 'on' },
-	);
-	const stateAuxLoad1 = card.getEntity('entities.aux_load1');
-	const stateAuxLoad2 = card.getEntity('entities.aux_load2');
-	const stateEssentialLoad1Extra = card.getEntity(
-		'entities.essential_load1_extra',
-	);
-	const stateEssentialLoad2Extra = card.getEntity(
-		'entities.essential_load2_extra',
-	);
-	const stateEssentialLoad3Extra = card.getEntity(
-		'entities.essential_load3_extra',
-	);
-	const stateEssentialLoad4Extra = card.getEntity(
-		'entities.essential_load4_extra',
-	);
-	const stateEssentialLoad5Extra = card.getEntity(
-		'entities.essential_load5_extra',
-	);
-	const stateEssentialLoad6Extra = card.getEntity(
-		'entities.essential_load6_extra',
-	);
-	const stateLoadPowerL1 = card.getEntity('entities.load_power_L1');
-	const stateLoadPowerL2 = card.getEntity('entities.load_power_L2');
-	const stateLoadPowerL3 = card.getEntity('entities.load_power_L3');
-	const stateAuxLoad1Extra = card.getEntity('entities.aux_load1_extra');
-	const stateAuxLoad2Extra = card.getEntity('entities.aux_load2_extra');
-
-	//Grid
-	const stateGridCTPower = card.getEntity('entities.grid_ct_power_172');
-	const stateGridCTPowerL2 = card.getEntity('entities.grid_ct_power_L2');
-	const stateGridCTPowerL3 = card.getEntity('entities.grid_ct_power_L3');
-	const stateGridCTPowerTotal = card.getEntity('entities.grid_ct_power_total');
-	const stateGridConnectedStatus = card.getEntity(
-		'entities.grid_connected_status_194',
-		{ state: 'on' },
-	);
-	const stateGridPower = card.getEntity('entities.grid_power_169');
-	const stateEnergyCostBuy = card.getEntity('entities.energy_cost_buy', {
-		state: '',
-		attributes: { unit_of_measurement: '' },
-	});
-	const stateEnergyCostSell = card.getEntity('entities.energy_cost_sell', {
-		state: '',
-		attributes: { unit_of_measurement: '' },
-	});
-	const stateGridVoltage = card.getEntity('entities.grid_voltage', null);
-	const statePrepaidUnits = card.getEntity('entities.prepaid_units');
-	const stateMaxSellPower = card.getEntity('entities.max_sell_power');
-
-	//Solar
-	const statePV1Voltage = card.getEntity('entities.pv1_voltage_109');
-	const statePV1Current = card.getEntity('entities.pv1_current_110');
-	const statePV2Voltage = card.getEntity('entities.pv2_voltage_111');
-	const statePV2Current = card.getEntity('entities.pv2_current_112');
-	const statePV3Voltage = card.getEntity('entities.pv3_voltage_113');
-	const statePV3Current = card.getEntity('entities.pv3_current_114');
-	const statePV4Voltage = card.getEntity('entities.pv4_voltage_115');
-	const statePV4Current = card.getEntity('entities.pv4_current_116');
-	const statePV5Voltage = card.getEntity('entities.pv5_voltage');
-	const statePV5Current = card.getEntity('entities.pv5_current');
-	const statePV6Voltage = card.getEntity('entities.pv6_voltage');
-	const statePV6Current = card.getEntity('entities.pv6_current');
-	const statePV1Power = card.getEntity('entities.pv1_power_186');
-	const statePV2Power = card.getEntity('entities.pv2_power_187');
-	const statePV3Power = card.getEntity('entities.pv3_power_188');
-	const statePV4Power = card.getEntity('entities.pv4_power_189');
-	const statePV5Power = card.getEntity('entities.pv5_power');
-	const statePV6Power = card.getEntity('entities.pv6_power');
-	const stateRemainingSolar = card.getEntity('entities.remaining_solar');
-	const stateSolarSell = card.getEntity('entities.solar_sell_247', {
-		state: 'undefined',
-	});
-	const statePVTotal = card.getEntity('entities.pv_total');
-	const stateTotalPVGeneration = card.getEntity('entities.total_pv_generation');
+	const {
+		stateDayBatteryDischarge,
+		stateDayBatteryCharge,
+		stateDayBattery2Discharge,
+		stateDayBattery2Charge,
+		_stateDayBattery3Discharge,
+		_stateDayBattery3Charge,
+		_stateDayBattery4Discharge,
+		_stateDayBattery4Charge,
+		stateDayLoadEnergy,
+		stateDayGridImport,
+		stateDayPVEnergy,
+		stateDayGridExport,
+		stateDayAuxEnergy,
+		stateInverterVoltage,
+		stateLoadFrequency,
+		stateInverterCurrent,
+		stateInverterStatus,
+		stateInverterPower,
+		statePriorityLoad,
+		stateUseTimer,
+		stateDCTransformerTemp,
+		stateRadiatorTemp,
+		stateInverterVoltageL2,
+		stateInverterVoltageL3,
+		stateInverterCurrentL2,
+		stateInverterCurrentL3,
+		stateEnvironmentTemp,
+		stateBatteryVoltage,
+		stateBatterySoc,
+		stateBatteryPower,
+		stateBatteryCurrent,
+		stateBatteryTemp,
+		stateBatteryStatus,
+		stateBatteryCurrentDirection,
+		stateBatteryRatedCapacity,
+		stateShutdownSOC,
+		stateShutdownSOCOffGrid,
+		stateBatterySOH,
+		stateSOCEndOfCharge,
+		stateBattery2Voltage,
+		stateBattery2Soc,
+		stateBattery2Power,
+		stateBattery2Current,
+		stateBattery2Temp,
+		stateBattery2Status,
+		stateBattery2CurrentDirection,
+		stateBattery2RatedCapacity,
+		stateShutdownSOC2,
+		stateShutdownSOCOffGrid2,
+		stateBattery2SOH,
+		stateSOCEndOfCharge2,
+		stateBattery3Voltage,
+		stateBattery3Soc,
+		stateBattery3Power,
+		stateBattery3Current,
+		stateBattery3Temp,
+		stateBattery3Status,
+		_stateBattery3CurrentDirection,
+		stateBattery3RatedCapacity,
+		stateShutdownSOC3,
+		stateShutdownSOCOffGrid3,
+		stateBattery3SOH,
+		stateSOCEndOfCharge3,
+		stateBattery4Voltage,
+		stateBattery4Soc,
+		stateBattery4Power,
+		stateBattery4Current,
+		stateBattery4Temp,
+		stateBattery4Status,
+		_stateBattery4CurrentDirection,
+		stateBattery4RatedCapacity,
+		stateShutdownSOC4,
+		stateShutdownSOCOffGrid4,
+		stateBattery4SOH,
+		stateSOCEndOfCharge4,
+		stateEssentialPower,
+		stateAuxPower,
+		stateNonessentialPower,
+		stateNonessentialLoad1,
+		stateNonessentialLoad2,
+		stateNonessentialLoad3,
+		stateNonEssentialLoad1Extra,
+		stateNonEssentialLoad2Extra,
+		stateNonEssentialLoad3Extra,
+		stateEssentialLoad1,
+		stateEssentialLoad2,
+		stateEssentialLoad3,
+		stateEssentialLoad4,
+		stateEssentialLoad5,
+		stateEssentialLoad6,
+		stateAuxConnectedStatus,
+		stateAuxLoad1,
+		stateAuxLoad2,
+		stateEssentialLoad1Extra,
+		stateEssentialLoad2Extra,
+		stateEssentialLoad3Extra,
+		stateEssentialLoad4Extra,
+		stateEssentialLoad5Extra,
+		stateEssentialLoad6Extra,
+		stateLoadPowerL1,
+		stateLoadPowerL2,
+		stateLoadPowerL3,
+		stateAuxLoad1Extra,
+		stateAuxLoad2Extra,
+		stateGridCTPower,
+		stateGridCTPowerL2,
+		stateGridCTPowerL3,
+		stateGridCTPowerTotal,
+		stateGridConnectedStatus,
+		stateGridPower,
+		stateEnergyCostBuy,
+		stateEnergyCostSell,
+		stateGridVoltage,
+		statePrepaidUnits,
+		stateMaxSellPower,
+		statePV1Voltage,
+		statePV1Current,
+		statePV2Voltage,
+		statePV2Current,
+		statePV3Voltage,
+		statePV3Current,
+		statePV4Voltage,
+		statePV4Current,
+		statePV5Voltage,
+		statePV5Current,
+		statePV6Voltage,
+		statePV6Current,
+		statePV1Power,
+		statePV2Power,
+		statePV3Power,
+		statePV4Power,
+		statePV5Power,
+		statePV6Power,
+		stateRemainingSolar,
+		stateSolarSell,
+		statePVTotal,
+		stateTotalPVGeneration,
+	} = resolveEntities(card);
 
 	//Set defaults
 	const invert_aux = config.load?.invert_aux ?? false;
@@ -803,74 +619,6 @@ export function buildData(card: SunsynkPowerFlowCard): {
 				: autoScaledInverterPower + autoScaledGridPower - auxPower
 			: stateEssentialPower.toPower(invertLoad);
 
-	//Timer entities
-	const prog1 = {
-		time: card.getEntity('entities.prog1_time', {
-			state: config.entities.prog1_time ?? '',
-		}),
-		capacity: card.getEntity('entities.prog1_capacity', {
-			state: config.entities.prog1_capacity ?? '',
-		}),
-		charge: card.getEntity('entities.prog1_charge', {
-			state: config.entities.prog1_charge ?? '',
-		}),
-	};
-	const prog2 = {
-		time: card.getEntity('entities.prog2_time', {
-			state: config.entities.prog2_time ?? '',
-		}),
-		capacity: card.getEntity('entities.prog2_capacity', {
-			state: config.entities.prog2_capacity ?? '',
-		}),
-		charge: card.getEntity('entities.prog2_charge', {
-			state: config.entities.prog2_charge ?? '',
-		}),
-	};
-	const prog3 = {
-		time: card.getEntity('entities.prog3_time', {
-			state: config.entities.prog3_time ?? '',
-		}),
-		capacity: card.getEntity('entities.prog3_capacity', {
-			state: config.entities.prog3_capacity ?? '',
-		}),
-		charge: card.getEntity('entities.prog3_charge', {
-			state: config.entities.prog3_charge ?? '',
-		}),
-	};
-	const prog4 = {
-		time: card.getEntity('entities.prog4_time', {
-			state: config.entities.prog4_time ?? '',
-		}),
-		capacity: card.getEntity('entities.prog4_capacity', {
-			state: config.entities.prog4_capacity ?? '',
-		}),
-		charge: card.getEntity('entities.prog4_charge', {
-			state: config.entities.prog4_charge ?? '',
-		}),
-	};
-	const prog5 = {
-		time: card.getEntity('entities.prog5_time', {
-			state: config.entities.prog5_time ?? '',
-		}),
-		capacity: card.getEntity('entities.prog5_capacity', {
-			state: config.entities.prog5_capacity ?? '',
-		}),
-		charge: card.getEntity('entities.prog5_charge', {
-			state: config.entities.prog5_charge ?? '',
-		}),
-	};
-	const prog6 = {
-		time: card.getEntity('entities.prog6_time', {
-			state: config.entities.prog6_time ?? '',
-		}),
-		capacity: card.getEntity('entities.prog6_capacity', {
-			state: config.entities.prog6_capacity ?? '',
-		}),
-		charge: card.getEntity('entities.prog6_charge', {
-			state: config.entities.prog6_charge ?? '',
-		}),
-	};
-
 	let batteryCount = config.battery?.count;
 	if (
 		!config.wide ||
@@ -891,154 +639,13 @@ export function buildData(card: SunsynkPowerFlowCard): {
 	const batteryShutdown3 = stateShutdownSOC3.toNum() || batteryShutdown;
 	const batteryShutdown4 = stateShutdownSOC4.toNum() || batteryShutdown;
 
-	const inverterProg: InverterSettings = {
-		capacity: batteryShutdown,
-		entityID: '',
-	};
-
-	switch (true) {
-		case stateUseTimer.state === 'off':
-		case !enableTimer:
-		case !config.entities.prog1_time:
-		case !config.entities.prog2_time:
-		case !config.entities.prog3_time:
-		case !config.entities.prog4_time:
-		case !config.entities.prog5_time:
-		case !config.entities.prog6_time:
-			inverterProg.show = false;
-			break;
-
-		default: {
-			inverterProg.show = true;
-
-			const timer_now = new Date(); // Create a new Date object representing the current time
-			//console.log(`Current date and time: ${timer_now.toLocaleString()}`);
-
-			assignInverterProgramBasedOnTime(timer_now);
-
-			function assignInverterProgramBasedOnTime(timer_now: Date) {
-				const progTimes: { start: Date; end: Date }[] = [];
-
-				// Populate the progTimes array with Date objects based on the current time
-				[prog1, prog2, prog3, prog4, prog5, prog6].forEach((prog, index) => {
-					if (!prog || !prog.time || !prog.time.state) {
-						console.error(
-							`Program ${index + 1} is not defined or has no valid time.`,
-						);
-						return; // Skip this program
-					}
-
-					const [hours, minutes] = prog.time.state
-						.split(':')
-						.map((item) => parseInt(item, 10));
-					const progStartTime = new Date(timer_now.getTime());
-					progStartTime.setHours(hours);
-					progStartTime.setMinutes(minutes);
-
-					// Determine the end time for each program (next program's start time)
-					const nextIndex =
-						(index + 1) % [prog1, prog2, prog3, prog4, prog5, prog6].length;
-					const nextProg = [prog1, prog2, prog3, prog4, prog5, prog6][
-						nextIndex
-					];
-					const progEndTime =
-						nextProg && nextProg.time && nextProg.time.state
-							? new Date(timer_now.getTime())
-							: new Date(timer_now.getTime());
-
-					if (nextProg && nextProg.time && nextProg.time.state) {
-						const [nextHours, nextMinutes] = nextProg.time.state
-							.split(':')
-							.map((item) => parseInt(item, 10));
-						progEndTime.setHours(nextHours);
-						progEndTime.setMinutes(nextMinutes);
-					} else {
-						console.warn(
-							`Next program ${nextIndex + 1} is not defined or has no valid time.`,
-						);
-					}
-
-					//console.log(`Program ${index + 1} time (before adjustment): Start: ${progStartTime.toLocaleString()}, End: ${progEndTime.toLocaleString()}`);
-
-					// Add to the progTimes array
-					progTimes[index] = { start: progStartTime, end: progEndTime };
-				});
-
-				// Adjust times for the next day if necessary
-				adjustProgramTimes(progTimes, timer_now);
-
-				// Time comparison logic to determine the active program
-				for (let i = 0; i < progTimes.length; i++) {
-					const { start: currentProgStartTime, end: currentProgEndTime } =
-						progTimes[i];
-
-					// Check for normal case (start < end)
-					if (
-						currentProgStartTime <= timer_now &&
-						timer_now < currentProgEndTime
-					) {
-						//console.log(`Assigning Program ${i + 1}`);
-						assignInverterProgValues(
-							[prog1, prog2, prog3, prog4, prog5, prog6][i],
-							config.entities[`prog${i + 1}_charge`],
-						);
-						break; // Exit once the correct program is assigned
-					}
-					// Check for wrap-around case (start > end)
-					else if (currentProgStartTime > currentProgEndTime) {
-						if (
-							timer_now >= currentProgStartTime ||
-							timer_now < currentProgEndTime
-						) {
-							//console.log(`Assigning Program ${i + 1} (wrap-around)`);
-							assignInverterProgValues(
-								[prog1, prog2, prog3, prog4, prog5, prog6][i],
-								config.entities[`prog${i + 1}_charge`],
-							);
-							break; // Exit once the correct program is assigned
-						}
-					}
-				}
-			}
-
-			function adjustProgramTimes(
-				progTimes: { start: Date; end: Date }[],
-				timer_now: Date,
-			) {
-				const currentTime = timer_now.getTime();
-				// Adjust for times that roll over into the next day
-				progTimes.forEach((progTime) => {
-					// If the start time is before current time and the end time is after the current time, adjust to the next day
-					if (
-						progTime.start.getTime() < currentTime &&
-						progTime.end.getTime() < currentTime
-					) {
-						progTime.start.setDate(progTime.start.getDate() + 1);
-						progTime.end.setDate(progTime.end.getDate() + 1);
-						//console.log(`Adjusted Program ${index + 1} to next day: Start: ${progTime.start.toLocaleString()}, End: ${progTime.end.toLocaleString()}`);
-					}
-				});
-				return progTimes;
-			}
-
-			function assignInverterProgValues(prog, entityID) {
-				if (
-					prog.charge.state === 'No Grid or Gen' ||
-					prog.charge.state === '0' ||
-					prog.charge.state === 'off'
-				) {
-					inverterProg.charge = 'none';
-				} else {
-					inverterProg.charge = 'both';
-				}
-
-				inverterProg.capacity = parseInt(prog.capacity.state);
-				inverterProg.entityID = entityID;
-			}
-
-			break;
-		}
-	}
+	const inverterProg = resolveInverterProg(
+		card,
+		config,
+		stateUseTimer,
+		enableTimer,
+		batteryShutdown,
+	);
 
 	if (
 		gridVoltage != null &&
@@ -1075,207 +682,72 @@ export function buildData(card: SunsynkPowerFlowCard): {
 	const batteryPowerTotal =
 		batteryCount === 2 ? batteryPower + battery2Power : batteryPower;
 
-	//calculate battery capacity
-	let batteryCapacity: number = 0;
-	if (config.show_battery) {
-		switch (true) {
-			case !inverterProg.show:
-				if (
-					config.battery.invert_flow === true
-						? batteryPower < 0
-						: batteryPower > 0
-				) {
-					if (
-						(gridStatus === 'on' ||
-							gridStatus === '1' ||
-							gridStatus.toLowerCase() === 'on-grid') &&
-						!inverterProg.show
-					) {
-						batteryCapacity = batteryShutdown;
-					} else if (
-						(gridStatus === 'off' ||
-							gridStatus === '0' ||
-							gridStatus.toLowerCase() === 'off-grid') &&
-						stateShutdownSOCOffGrid.notEmpty() &&
-						!inverterProg.show
-					) {
-						batteryCapacity = shutdownOffGrid;
-					} else {
-						batteryCapacity = batteryShutdown;
-					}
-				} else if (
-					config.battery.invert_flow === true
-						? batteryPower > 0
-						: batteryPower < 0
-				) {
-					batteryCapacity = maximumSOC;
-				}
-				break;
-
-			default:
-				batteryCapacity = inverterSettings.getBatteryCapacity(
-					batteryPower,
-					gridStatus,
-					batteryShutdown,
-					inverterProg,
-					stateBatterySoc,
-					maximumSOC,
-					config.battery.invert_flow,
-				);
-		}
-	}
-
-	//calculate battery2 capacity
-	let battery2Capacity: number = 0;
-	if (config.show_battery) {
-		switch (true) {
-			case !inverterProg.show:
-				if (
-					config.battery2.invert_flow === true
-						? battery2Power < 0
-						: battery2Power > 0
-				) {
-					if (
-						(gridStatus === 'on' ||
-							gridStatus === '1' ||
-							gridStatus.toLowerCase() === 'on-grid') &&
-						!inverterProg.show
-					) {
-						battery2Capacity = batteryShutdown2;
-					} else if (
-						(gridStatus === 'off' ||
-							gridStatus === '0' ||
-							gridStatus.toLowerCase() === 'off-grid') &&
-						stateShutdownSOCOffGrid2.notEmpty() &&
-						!inverterProg.show
-					) {
-						battery2Capacity = shutdownOffGrid2;
-					} else {
-						battery2Capacity = batteryShutdown2;
-					}
-				} else if (
-					config.battery2.invert_flow === true
-						? battery2Power > 0
-						: battery2Power < 0
-				) {
-					battery2Capacity = maximumSOC2;
-				}
-				break;
-
-			default:
-				battery2Capacity = inverterSettings.getBatteryCapacity(
-					battery2Power,
-					gridStatus,
-					batteryShutdown2,
-					inverterProg,
-					stateBattery2Soc,
-					maximumSOC2,
-					config.battery2.invert_flow,
-				);
-		}
-	}
-
-	//calculate battery3 capacity
-	let battery3Capacity: number = 0;
-	if (config.show_battery) {
-		switch (true) {
-			case !inverterProg.show:
-				if (
-					config.battery3.invert_flow === true
-						? battery3Power < 0
-						: battery3Power > 0
-				) {
-					if (
-						(gridStatus === 'on' ||
-							gridStatus === '1' ||
-							gridStatus.toLowerCase() === 'on-grid') &&
-						!inverterProg.show
-					) {
-						battery3Capacity = batteryShutdown3;
-					} else if (
-						(gridStatus === 'off' ||
-							gridStatus === '0' ||
-							gridStatus.toLowerCase() === 'off-grid') &&
-						stateShutdownSOCOffGrid3.notEmpty() &&
-						!inverterProg.show
-					) {
-						battery3Capacity = shutdownOffGrid3;
-					} else {
-						battery3Capacity = batteryShutdown3;
-					}
-				} else if (
-					config.battery3.invert_flow === true
-						? battery3Power > 0
-						: battery3Power < 0
-				) {
-					battery3Capacity = maximumSOC3;
-				}
-				break;
-
-			default:
-				battery3Capacity = inverterSettings.getBatteryCapacity(
-					battery3Power,
-					gridStatus,
-					batteryShutdown3,
-					inverterProg,
-					stateBattery3Soc,
-					maximumSOC3,
-					config.battery3.invert_flow,
-				);
-		}
-	}
-
-	//calculate battery4 capacity
-	let battery4Capacity: number = 0;
-	if (config.show_battery) {
-		switch (true) {
-			case !inverterProg.show:
-				if (
-					config.battery4.invert_flow === true
-						? battery4Power < 0
-						: battery4Power > 0
-				) {
-					if (
-						(gridStatus === 'on' ||
-							gridStatus === '1' ||
-							gridStatus.toLowerCase() === 'on-grid') &&
-						!inverterProg.show
-					) {
-						battery4Capacity = batteryShutdown4;
-					} else if (
-						(gridStatus === 'off' ||
-							gridStatus === '0' ||
-							gridStatus.toLowerCase() === 'off-grid') &&
-						stateShutdownSOCOffGrid4.notEmpty() &&
-						!inverterProg.show
-					) {
-						battery4Capacity = shutdownOffGrid4;
-					} else {
-						battery4Capacity = batteryShutdown4;
-					}
-				} else if (
-					config.battery4.invert_flow === true
-						? battery4Power > 0
-						: battery4Power < 0
-				) {
-					battery4Capacity = maximumSOC4;
-				}
-				break;
-
-			default:
-				battery4Capacity = inverterSettings.getBatteryCapacity(
-					battery4Power,
-					gridStatus,
-					batteryShutdown4,
-					inverterProg,
-					stateBattery4Soc,
-					maximumSOC4,
-					config.battery4.invert_flow,
-				);
-		}
-	}
+	const capCommon = {
+		show: !!config.show_battery,
+		gridStatus,
+		inverterProg,
+		inverterSettings,
+	};
+	const batteryCapacity = calcBatteryCapacity({
+		...capCommon,
+		power: batteryPower,
+		invertFlow: config.battery.invert_flow === true,
+		shutdown: batteryShutdown,
+		offGridState: stateShutdownSOCOffGrid,
+		offGridShutdown: shutdownOffGrid,
+		maxSoc: maximumSOC,
+		soc: stateBatterySoc,
+	});
+	const battery2Capacity = calcBatteryCapacity({
+		...capCommon,
+		power: battery2Power,
+		invertFlow: config.battery2.invert_flow === true,
+		shutdown: batteryShutdown2,
+		offGridState: stateShutdownSOCOffGrid2,
+		offGridShutdown: shutdownOffGrid2,
+		maxSoc: maximumSOC2,
+		soc: stateBattery2Soc,
+	});
+	const battery3Capacity = calcBatteryCapacity({
+		...capCommon,
+		power: battery3Power,
+		invertFlow: config.battery3.invert_flow === true,
+		shutdown: batteryShutdown3,
+		offGridState: stateShutdownSOCOffGrid3,
+		offGridShutdown: shutdownOffGrid3,
+		maxSoc: maximumSOC3,
+		soc: stateBattery3Soc,
+	});
+	const battery4Capacity = calcBatteryCapacity({
+		...capCommon,
+		power: battery4Power,
+		invertFlow: config.battery4.invert_flow === true,
+		shutdown: batteryShutdown4,
+		offGridState: stateShutdownSOCOffGrid4,
+		offGridShutdown: shutdownOffGrid4,
+		maxSoc: maximumSOC4,
+		soc: stateBattery4Soc,
+	});
 
 	//calculate remaining battery time to charge or discharge
+	const battEnergyOf = (key: string, energy: unknown) =>
+		card.getEntity(key, { state: energy?.toString() ?? '' }).toPower(false);
+	let batteryEnergy = battEnergyOf('battery.energy', config.battery.energy);
+	let battery2Energy = battEnergyOf('battery2.energy', config.battery2.energy);
+	let battery3Energy = battEnergyOf('battery3.energy', config.battery3.energy);
+	let battery4Energy = battEnergyOf('battery4.energy', config.battery4.energy);
+	const rated = (voltage: number, cap: CustomEntity) =>
+		voltage && cap.notEmpty() ? Utils.toNum(voltage * cap.toNum(0), 0) : 0;
+	batteryEnergy =
+		rated(batteryVoltage, stateBatteryRatedCapacity) || batteryEnergy;
+	battery2Energy =
+		rated(battery2Voltage, stateBattery2RatedCapacity) || battery2Energy;
+	battery3Energy =
+		rated(battery3Voltage, stateBattery3RatedCapacity) || battery3Energy;
+	battery4Energy =
+		rated(battery4Voltage, stateBattery4RatedCapacity) || battery4Energy;
+
+	const batteryTotalEnergy = batteryEnergy + battery2Energy;
 
 	let formattedResultTime = '';
 	let formattedResultTime2 = '';
@@ -1286,414 +758,143 @@ export function buildData(card: SunsynkPowerFlowCard): {
 	let batteryDuration3 = '';
 	let batteryDuration4 = '';
 
-	const battenergy = card.getEntity('battery.energy', {
-		state: config.battery.energy?.toString() ?? '',
-	});
-	const batt2energy = card.getEntity('battery2.energy', {
-		state: config.battery2.energy?.toString() ?? '',
-	});
-	const batt3energy = card.getEntity('battery3.energy', {
-		state: config.battery3.energy?.toString() ?? '',
-	});
-	const batt4energy = card.getEntity('battery4.energy', {
-		state: config.battery4.energy?.toString() ?? '',
-	});
-	let batteryEnergy = battenergy.toPower(false);
-	let battery2Energy = batt2energy.toPower(false);
-	let battery3Energy = batt3energy.toPower(false);
-	let battery4Energy = batt4energy.toPower(false);
-
-	if (batteryVoltage && stateBatteryRatedCapacity.notEmpty()) {
-		batteryEnergy = Utils.toNum(
-			batteryVoltage * stateBatteryRatedCapacity.toNum(0),
-			0,
-		);
-	}
-	if (battery2Voltage && stateBattery2RatedCapacity.notEmpty()) {
-		battery2Energy = Utils.toNum(
-			battery2Voltage * stateBattery2RatedCapacity.toNum(0),
-			0,
-		);
-	}
-	if (battery3Voltage && stateBattery3RatedCapacity.notEmpty()) {
-		battery3Energy = Utils.toNum(
-			battery3Voltage * stateBattery3RatedCapacity.toNum(0),
-			0,
-		);
-	}
-	if (battery4Voltage && stateBattery4RatedCapacity.notEmpty()) {
-		battery4Energy = Utils.toNum(
-			battery4Voltage * stateBattery4RatedCapacity.toNum(0),
-			0,
-		);
-	}
-
-	const batteryTotalEnergy = batteryEnergy + battery2Energy;
-
 	if (config.show_battery || batteryEnergy !== 0 || battery2Energy !== 0) {
-		let totalSeconds = 0;
-		if (batteryEnergy !== 0) {
-			totalSeconds = calculateTotalSeconds(
+		const runtimes = [
+			[
 				stateBatterySoc,
 				batteryShutdown,
 				batteryCapacity,
 				batteryEnergy,
 				batteryPower,
 				config.battery.invert_flow,
-			);
-
-			const currentTime = new Date();
-			const resultTime = new Date(currentTime.getTime() + totalSeconds * 1000);
-			const resultHours = resultTime.getHours(); // Get the hours component of the resulting time
-			const resultMinutes = resultTime.getMinutes(); // Get the minutes component of the resulting time
-			const formattedMinutes = resultMinutes.toString().padStart(2, '0');
-			const formattedHours = resultHours.toString().padStart(2, '0');
-			formattedResultTime = `${formattedHours}:${formattedMinutes}`;
-
-			// Calculate duration in days, hours, and minutes
-			const days = Math.floor(totalSeconds / (60 * 60 * 24));
-			const hours = Math.floor((totalSeconds % (60 * 60 * 24)) / (60 * 60));
-			const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
-
-			if (days > 0) {
-				batteryDuration += `${days} ${localize('common.days')}, `;
-			}
-			if (hours > 0 || days > 0) {
-				batteryDuration += `${hours} ${localize('common.hrs')}, `;
-			}
-			batteryDuration += `${minutes} ${localize('common.min')}`;
-		}
-
-		let totalSeconds2 = 0;
-		if (battery2Energy !== 0) {
-			totalSeconds2 = calculateTotalSeconds(
+			],
+			[
 				stateBattery2Soc,
 				batteryShutdown2,
 				battery2Capacity,
 				battery2Energy,
 				battery2Power,
 				config.battery2.invert_flow,
-			);
-
-			const currentTime2 = new Date();
-			const resultTime2 = new Date(
-				currentTime2.getTime() + totalSeconds2 * 1000,
-			);
-			const resultHours2 = resultTime2.getHours(); // Get the hours component of the resulting time
-			const resultMinutes2 = resultTime2.getMinutes(); // Get the minutes component of the resulting time
-			const formattedMinutes2 = resultMinutes2.toString().padStart(2, '0');
-			const formattedHours2 = resultHours2.toString().padStart(2, '0');
-			formattedResultTime2 = `${formattedHours2}:${formattedMinutes2}`;
-
-			// Calculate duration in days, hours, and minutes
-			const days2 = Math.floor(totalSeconds2 / (60 * 60 * 24));
-			const hours2 = Math.floor((totalSeconds2 % (60 * 60 * 24)) / (60 * 60));
-			const minutes2 = Math.floor((totalSeconds2 % (60 * 60)) / 60);
-
-			if (days2 > 0) {
-				batteryDuration2 += `${days2} ${localize('common.days')}, `;
-			}
-			if (hours2 > 0 || days2 > 0) {
-				batteryDuration2 += `${hours2} ${localize('common.hrs')}, `;
-			}
-			batteryDuration2 += `${minutes2} ${localize('common.min')}`;
-		}
-
-		let totalSeconds3 = 0;
-		if (battery3Energy !== 0) {
-			totalSeconds3 = calculateTotalSeconds(
+			],
+			[
 				stateBattery3Soc,
 				batteryShutdown3,
 				battery3Capacity,
 				battery3Energy,
 				battery3Power,
 				config.battery3.invert_flow,
-			);
-
-			const currentTime3 = new Date();
-			const resultTime3 = new Date(
-				currentTime3.getTime() + totalSeconds3 * 1000,
-			);
-			const resultHours3 = resultTime3.getHours();
-			const resultMinutes3 = resultTime3.getMinutes();
-			const formattedMinutes3 = resultMinutes3.toString().padStart(2, '0');
-			const formattedHours3 = resultHours3.toString().padStart(2, '0');
-			formattedResultTime3 = `${formattedHours3}:${formattedMinutes3}`;
-
-			const days3 = Math.floor(totalSeconds3 / (60 * 60 * 24));
-			const hours3 = Math.floor((totalSeconds3 % (60 * 60 * 24)) / (60 * 60));
-			const minutes3 = Math.floor((totalSeconds3 % (60 * 60)) / 60);
-
-			if (days3 > 0) {
-				batteryDuration3 += `${days3} ${localize('common.days')}, `;
-			}
-			if (hours3 > 0 || days3 > 0) {
-				batteryDuration3 += `${hours3} ${localize('common.hrs')}, `;
-			}
-			batteryDuration3 += `${minutes3} ${localize('common.min')}`;
-		}
-
-		let totalSeconds4 = 0;
-		if (battery4Energy !== 0) {
-			totalSeconds4 = calculateTotalSeconds(
+			],
+			[
 				stateBattery4Soc,
 				batteryShutdown4,
 				battery4Capacity,
 				battery4Energy,
 				battery4Power,
 				config.battery4.invert_flow,
-			);
-
-			const currentTime4 = new Date();
-			const resultTime4 = new Date(
-				currentTime4.getTime() + totalSeconds4 * 1000,
-			);
-			const resultHours4 = resultTime4.getHours();
-			const resultMinutes4 = resultTime4.getMinutes();
-			const formattedMinutes4 = resultMinutes4.toString().padStart(2, '0');
-			const formattedHours4 = resultHours4.toString().padStart(2, '0');
-			formattedResultTime4 = `${formattedHours4}:${formattedMinutes4}`;
-
-			const days4 = Math.floor(totalSeconds4 / (60 * 60 * 24));
-			const hours4 = Math.floor((totalSeconds4 % (60 * 60 * 24)) / (60 * 60));
-			const minutes4 = Math.floor((totalSeconds4 % (60 * 60)) / 60);
-
-			if (days4 > 0) {
-				batteryDuration4 += `${days4} ${localize('common.days')}, `;
+			],
+		] as const;
+		const results = runtimes.map(([soc, shutdown, cap, energy, power, inv]) =>
+			energy !== 0
+				? formatBatteryRuntime(soc, shutdown, cap, energy, power, inv)
+				: { formattedTime: '', duration: '' },
+		);
+		[
+			[results[0].formattedTime, results[0].duration],
+			[results[1].formattedTime, results[1].duration],
+			[results[2].formattedTime, results[2].duration],
+			[results[3].formattedTime, results[3].duration],
+		].forEach(([t, d], i) => {
+			if (i === 0) {
+				formattedResultTime = t;
+				batteryDuration = d;
 			}
-			if (hours4 > 0 || days4 > 0) {
-				batteryDuration4 += `${hours4} ${localize('common.hrs')}, `;
+			if (i === 1) {
+				formattedResultTime2 = t;
+				batteryDuration2 = d;
 			}
-			batteryDuration4 += `${minutes4} ${localize('common.min')}`;
-		}
+			if (i === 2) {
+				formattedResultTime3 = t;
+				batteryDuration3 = d;
+			}
+			if (i === 3) {
+				formattedResultTime4 = t;
+				batteryDuration4 = d;
+			}
+		});
 	}
 
-	const isFloating =
-		-2 <= stateBatteryCurrent.toNum(0) &&
-		stateBatteryCurrent.toNum(0) <= 2 &&
-		stateBatterySoc.toNum(0) >= 99;
-
-	const isFloating2 =
-		-2 <= stateBattery2Current.toNum(0) &&
-		stateBattery2Current.toNum(0) <= 2 &&
-		stateBattery2Soc.toNum(0) >= 99;
-	const isFloating3 =
-		-2 <= stateBattery3Current.toNum(0) &&
-		stateBattery3Current.toNum(0) <= 2 &&
-		stateBattery3Soc.toNum(0) >= 99;
-	const isFloating4 =
-		-2 <= stateBattery4Current.toNum(0) &&
-		stateBattery4Current.toNum(0) <= 2 &&
-		stateBattery4Soc.toNum(0) >= 99;
-
+	const isFloating = isBatteryFloating(
+		stateBatteryCurrent.toNum(0),
+		stateBatterySoc.toNum(0),
+	);
+	const isFloating2 = isBatteryFloating(
+		stateBattery2Current.toNum(0),
+		stateBattery2Soc.toNum(0),
+	);
+	const isFloating3 = isBatteryFloating(
+		stateBattery3Current.toNum(0),
+		stateBattery3Soc.toNum(0),
+	);
+	const isFloating4 = isBatteryFloating(
+		stateBattery4Current.toNum(0),
+		stateBattery4Soc.toNum(0),
+	);
 	const isFloatingCombined =
 		batteryCount === 2 ? isFloating && isFloating2 : isFloating;
 
 	// Determine battery colours
-	let batteryColour: string;
-	if (
-		config.battery.invert_flow === true
-			? batteryPower > 0 && !isFloating
-			: batteryPower < 0 && !isFloating
-	) {
-		batteryColour = batteryChargeColour;
-	} else {
-		batteryColour = batteryColourConfig;
-	}
+	const batteryColour = pickBatteryColour(
+		config.battery.invert_flow,
+		batteryPower,
+		isFloating,
+		batteryChargeColour,
+		batteryColourConfig,
+	);
+	const battery2Colour = pickBatteryColour(
+		config.battery2.invert_flow,
+		battery2Power,
+		isFloating2,
+		battery2ChargeColour,
+		battery2ColourConfig,
+	);
+	const battery3Colour = pickBatteryColour(
+		config.battery3.invert_flow,
+		battery3Power,
+		isFloating3,
+		battery3ChargeColour,
+		battery3ColourConfig,
+	);
+	const battery4Colour = pickBatteryColour(
+		config.battery4.invert_flow,
+		battery4Power,
+		isFloating4,
+		battery4ChargeColour,
+		battery4ColourConfig,
+	);
 
-	let battery2Colour = battery2ColourConfig;
-	if (
-		config.battery2.invert_flow === true
-			? battery2Power > 0 && !isFloating2
-			: battery2Power < 0 && !isFloating2
-	) {
-		battery2Colour = battery2ChargeColour;
-	}
-	let battery3Colour = battery3ColourConfig;
-	if (
-		config.battery3.invert_flow === true
-			? battery3Power > 0 && !isFloating3
-			: battery3Power < 0 && !isFloating3
-	) {
-		battery3Colour = battery3ChargeColour;
-	}
-	let battery4Colour = battery4ColourConfig;
-	if (
-		config.battery4.invert_flow === true
-			? battery4Power > 0 && !isFloating4
-			: battery4Power < 0 && !isFloating4
-	) {
-		battery4Colour = battery4ChargeColour;
-	}
-
-	//Set Inverter Status Message and dot
-	let inverterStateColour = '';
-	let inverterStateMsg = '';
-	let inverterState = stateInverterStatus.state as string;
-
-	let found = false;
-
-	/**
-	 * Status can be returned as decimals "3.0", so this is just to change it to an int
-	 */
-	if (inverterModel == InverterModel.Solis) {
-		inverterState = !stateInverterStatus.isNaN()
-			? stateInverterStatus.toNum(0).toString()
-			: stateInverterStatus.toString();
-	}
-
-	const typeStatusGroups = inverterSettings.statusGroups;
-	if (typeStatusGroups)
-		for (const groupKey of Object.keys(typeStatusGroups)) {
-			const info = typeStatusGroups[groupKey];
-			const { states, color, message } = info;
-			if (states.includes(inverterState.toLowerCase())) {
-				inverterStateColour = color;
-				inverterStateMsg = message;
-				found = true;
-				break;
-			}
-		}
-
-	if (!found) {
-		if (
-			config.entities?.inverter_status_59 === 'none' ||
-			!config.entities?.inverter_status_59
-		) {
-			inverterStateColour = 'transparent';
-			inverterStateMsg = '';
-		} else {
-			inverterStateColour = 'transparent';
-			inverterStateMsg = 'Status';
-		}
-	}
-
-	//Set Battery Status Message and dot for goodwe
-	let batteryStateColour = 'transparent';
-	let batteryStateMsg = '';
-	let battery2StateColour = 'transparent';
-	let battery2StateMsg = '';
-	let battery3StateColour = 'transparent';
-	let battery3StateMsg = '';
-	let battery4StateColour = 'transparent';
-	let battery4StateMsg = '';
-	let battery1Found = false;
-	let battery2Found = false;
-	let battery3Found = false;
-	let battery4Found = false;
-
-	if (
+	const {
+		inverterStateColour,
+		inverterStateMsg,
+		batteryStateColour,
+		batteryStateMsg,
+		battery2StateColour,
+		battery2StateMsg,
+		battery3StateColour,
+		battery3StateMsg,
+		battery4StateColour,
+		battery4StateMsg,
+	} = resolveStatuses(
+		config,
+		inverterModel,
+		stateInverterStatus,
+		inverterSettings,
 		[
-			InverterModel.GoodweGridMode,
-			InverterModel.Goodwe,
-			InverterModel.Huawei,
-		].includes(inverterModel)
-	) {
-		const batStatusGroups = inverterSettings.batteryStatusGroups;
-
-		if (batStatusGroups) {
-			for (const groupKey of Object.keys(batStatusGroups)) {
-				const info = batStatusGroups[groupKey];
-				const { states, color, message } = info;
-
-				// Check for stateBatteryStatus
-				if (
-					!battery1Found &&
-					states.includes(stateBatteryStatus.state.toLowerCase())
-				) {
-					batteryStateColour = color;
-					batteryStateMsg = message;
-					battery1Found = true;
-				}
-
-				// Check for stateBattery2Status
-				if (
-					!battery2Found &&
-					states.includes(stateBattery2Status.state.toLowerCase())
-				) {
-					battery2StateColour = color;
-					battery2StateMsg = message;
-					battery2Found = true;
-				}
-				// Check for stateBattery3Status
-				if (
-					!battery3Found &&
-					states.includes(stateBattery3Status.state.toLowerCase())
-				) {
-					battery3StateColour = color;
-					battery3StateMsg = message;
-					battery3Found = true;
-				}
-				// Check for stateBattery4Status
-				if (
-					!battery4Found &&
-					states.includes(stateBattery4Status.state.toLowerCase())
-				) {
-					battery4StateColour = color;
-					battery4StateMsg = message;
-					battery4Found = true;
-				}
-
-				// Break the loop if both batteries are found
-				if (battery1Found && battery2Found && battery3Found && battery4Found)
-					break;
-			}
-		}
-
-		// Default logic for battery 1
-		if (!battery1Found) {
-			if (
-				config.entities?.battery_status === 'none' ||
-				!config.entities?.battery_status
-			) {
-				batteryStateColour = 'transparent';
-				batteryStateMsg = '';
-			} else {
-				batteryStateColour = 'transparent';
-				batteryStateMsg = 'Status';
-			}
-		}
-
-		// Default logic for battery 2
-		if (!battery2Found) {
-			if (
-				config.entities?.battery2_status === 'none' ||
-				!config.entities?.battery2_status
-			) {
-				battery2StateColour = 'transparent';
-				battery2StateMsg = '';
-			} else {
-				battery2StateColour = 'transparent';
-				battery2StateMsg = 'Status';
-			}
-		}
-		// Default logic for battery 2
-		if (!battery3Found) {
-			if (
-				config.entities?.battery3_status === 'none' ||
-				!config.entities?.battery3_status
-			) {
-				battery3StateColour = 'transparent';
-				battery3StateMsg = '';
-			} else {
-				battery3StateColour = 'transparent';
-				battery3StateMsg = 'Status';
-			}
-		}
-		// Default logic for battery 2
-		if (!battery4Found) {
-			if (
-				config.entities?.battery4_status === 'none' ||
-				!config.entities?.battery4_status
-			) {
-				battery4StateColour = 'transparent';
-				battery4StateMsg = '';
-			} else {
-				battery4StateColour = 'transparent';
-				battery4StateMsg = 'Status';
-			}
-		}
-	}
+			stateBatteryStatus,
+			stateBattery2Status,
+			stateBattery3Status,
+			stateBattery4Status,
+		],
+	);
 
 	const totalDayBatteryDischarge =
 		stateDayBatteryDischarge.toNum() + stateDayBattery2Discharge.toNum();
