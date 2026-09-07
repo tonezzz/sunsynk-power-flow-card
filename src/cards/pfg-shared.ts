@@ -112,7 +112,7 @@ export function renderPfgChart(
 							(d) =>
 								html`<div
 									style="position:absolute;left:0;right:0;top:${
-										g.label ? '10%' : '0'
+										g.label ? '8%' : '0'
 									};bottom:0;"
 								>
 									${renderPfgChart(d, c, hass, suppressLabel)}
@@ -174,8 +174,9 @@ export function renderPfgChart(
 					style="position:absolute;inset:0;width:100%;height:100%;"
 				>
 					${items.map((r) => {
-						const x = r.i * colW + colW * 0.15;
-						const w = colW * 0.7;
+						const gap = chartDef.bar_gap ?? 0.15;
+						const x = r.i * colW + colW * gap;
+						const w = colW * (1 - 2 * gap);
 						const trackY = 16;
 						const trackH = 64;
 						const fillH = trackH * r.sPct;
