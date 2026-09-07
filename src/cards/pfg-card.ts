@@ -6,7 +6,8 @@ import {
 	hexToRgba,
 	stateToStatus,
 	renderPfgChart,
-} from './pfg-shared';
+	chartOverlayStyle,
+} from './pfg';
 
 export const pfgCard = (
 	config: sunsynkPowerFlowCardConfig,
@@ -302,21 +303,11 @@ export const pfgCard = (
 									tpl: renderPfgChart(chartDef, c, hass),
 								}))
 								.filter((i) => i.tpl != null);
-							const chartOverlays = chartItems.map((i) => {
-								const pos = i.def.position || 'center';
-								const style =
-									pos === 'bottom'
-										? `position:absolute;bottom:2%;left:2.5%;width:95%;height:${i.def.height ?? '35%'};`
-										: pos === 'top'
-											? 'position:absolute;top:6%;left:2.5%;width:95%;height:56%;'
-											: pos === 'bg'
-												? `position:absolute;bottom:0;left:0;width:100%;height:${i.def.height ?? '50%'};pointer-events:none;${i.def.opacity != null ? `opacity:${i.def.opacity};` : ''}${i.def.scrim ? 'background:linear-gradient(to top,rgba(0,0,0,0.45),rgba(0,0,0,0.15) 60%,transparent);' : ''}`
-												: pos === 'cycle'
-													? `position:absolute;inset:0;width:100%;height:100%;pointer-events:none;${i.def.opacity != null ? `opacity:${i.def.opacity};` : ''}`
-													: 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:95%;height:70%;';
-								return html`<div style="${style}">${i.tpl}</div>`;
-							});
-							const title = `Tile ${key}${status ? ` – ${status}` : ''}${entityState ? ` (${entityState})` : ''}`;
+							const chartOverlays = chartItems.map(
+								(i) =>
+									html`<div style="${chartOverlayStyle(i.def)}">${i.tpl}</div>`,
+							);
+							const title = `Tile ${key}${status ? ' – ' + status : ''}${entityState ? ' (' + entityState + ')' : ''}`;
 							const cellStyle = `border:${hideGrid ? 'none' : tileBorder || `1px solid ${color || 'rgba(255,255,255,0.2)'}`};background:${color ? hexToRgba(color, 0.2) : hideGrid ? 'transparent' : 'rgba(255,255,255,0.05)'};display:flex;align-items:center;justify-content:center;font-size:min(1.5vw,10px);text-align:center;box-sizing:border-box;overflow:hidden;position:relative;${radius ? `border-radius:${radius};` : ''}${span && (span.rows > 1 || span.cols > 1) ? `grid-row:${c.row}/span ${span.rows};grid-column:${c.col}/span ${span.cols};` : ''}`;
 							const labelOverlay = label
 								? html`<span
