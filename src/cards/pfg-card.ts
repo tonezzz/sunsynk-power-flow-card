@@ -195,6 +195,12 @@ export const pfgCard = (
 	});
 
 	return html`
+		<style>
+			ha-card::before,
+			ha-card::after {
+				pointer-events: none !important;
+			}
+		</style>
 		${
 			config.pfg_transparent
 				? html`<style>
