@@ -26,6 +26,11 @@ export const historyCache = new Map<
 	{ ts: number; promise: Promise<ReturnType<typeof svg>> }
 >();
 
+const areaCache = new Map<
+	string,
+	{ ts: number; promise: Promise<ReturnType<typeof svg>> }
+>();
+
 export function stateToStatus(state?: string): string {
 	if (!state) return 'unknown';
 	const s = state.toLowerCase();
@@ -95,9 +100,7 @@ export function renderPfgChart(
 				(g, gi) => html`
 					<div
 						style="position:relative;flex:1 1 0;min-height:0;min-width:0;overflow:hidden;${
-							gi
-								? `${horiz ? 'margin-left' : 'margin-top'}:${groupGap}%;`
-								: ''
+							gi ? `${horiz ? 'margin-left' : 'margin-top'}:${groupGap}%;` : ''
 						}"
 					>
 						${
@@ -417,6 +420,154 @@ export function renderPfgChart(
 			historyCache.set(cacheKey, { ts: end.getTime(), promise });
 		}
 		const tpl = historyCache.get(cacheKey)!.promise;
+		return until(
+			tpl,
+			html`<div style="color:#aaa;font-size:10px;">loading</div>`,
+		);
+	} else if (chartDef.type === 'area') {
+		const entityIds = ents;
+		const hours = chartDef.hours ?? 24;
+		const end = new Date();
+		const start = new Date(end.getTime() - hours * 60 * 60 * 1000);
+		const dataMax = max * scale;
+		const dataMin = min * scale;
+		const colors = chartDef.colors ?? [
+			'#00E676',
+			'#ffb300',
+			'#ff5252',
+			'#4fc3f7',
+			'#5fb6ad',
+		];
+		const strokeWidth = chartDef.stroke_width ?? 1;
+		const fillOpacity = chartDef.fill_opacity ?? 0.25;
+		const cacheKey = `${entityIds.join('+')}:${hours}:${Math.floor(end.getTime() / (5 * 60 * 1000))}`;
+		if (
+			!areaCache.has(cacheKey) ||
+			(areaCache.get(cacheKey)?.ts || 0) < end.getTime() - 5 * 60 * 1000
+		) {
+			const h = hass as HomeAssistant & {
+				callWS?: <T>(msg: object) => Promise<T>;
+				callApi?: (method: string, path: string) => Promise<unknown>;
+			};
+			const call = h.callWS
+				? h.callWS({
+						type: 'history/history_during_period',
+						start_time: start.toISOString(),
+						end_time: end.toISOString(),
+						entity_ids: entityIds,
+						minimal_response: true,
+						no_attributes: true,
+						significant_changes_only: false,
+						include_start_time_state: true,
+					})
+				: h.callApi
+					? h.callApi(
+							'GET',
+							`history/period/${start.toISOString()}?end_time=${encodeURIComponent(end.toISOString())}&filter_entity_id=${entityIds.map(encodeURIComponent).join(',')}`,
+						)
+					: Promise.resolve(null);
+			const promise = call
+				.then((resp: unknown) => {
+					const seriesLists: unknown[] = Array.isArray(resp)
+						? resp
+						: entityIds.map(
+								(e) => (resp && (resp as Record<string, unknown>)[e]) || [],
+							);
+					const lists = seriesLists
+						.filter((l) => Array.isArray(l))
+						.map((l) =>
+							(
+								l as {
+									s?: unknown;
+									state?: unknown;
+									lu?: number;
+									last_updated?: string;
+									last_changed?: string;
+								}[]
+							)
+								.map((p) => {
+									const stateStr = p.s !== undefined ? p.s : p.state;
+									const time =
+										p.lu !== undefined
+											? p.lu
+											: new Date(
+													p.last_updated ?? p.last_changed ?? 0,
+												).getTime() / 1000;
+									const v = parseFloat(String(stateStr));
+									return { t: time, v: isNaN(v) ? 0 : v };
+								})
+								.filter(
+									(p: { t: number; v: number }) =>
+										typeof p.t === 'number' && !isNaN(p.v),
+								)
+								.sort(
+									(a: { t: number; v: number }, b: { t: number; v: number }) =>
+										a.t - b.t,
+								),
+						);
+					const n = Math.min(...lists.map((l) => l.length)) || 0;
+					const series: number[][] = lists.map((l) =>
+						l.slice(0, n).map((p) => p.v * scale),
+					);
+					const totals: number[] = [];
+					const cumulative: number[][] = [];
+					for (let i = 0; i < n; i++) {
+						let sum = 0;
+						for (let j = 0; j < series.length; j++) {
+							sum += series[j][i];
+							cumulative[j] = cumulative[j] || [];
+							cumulative[j][i] = sum;
+						}
+						totals[i] = sum;
+					}
+					const effectiveMax = Math.max(dataMax, ...totals, dataMin + 1);
+					const effectiveMin = Math.min(dataMin, ...series.flat());
+					const range =
+						effectiveMax === effectiveMin ? 1 : effectiveMax - effectiveMin;
+					const width = 100;
+					const height = 60;
+					const pad = 4;
+					const graphH = height - pad * 2;
+					const toY = (v: number) =>
+						pad + graphH - ((v - effectiveMin) / range) * graphH;
+					const getX = (i: number) =>
+						n === 1 ? (i === 0 ? 0 : width) : (i / (n - 1)) * width;
+					const polys: string[] = [];
+					const lines: string[] = [];
+					for (let j = 0; j < series.length; j++) {
+						const top = cumulative[j];
+						const bottom = j > 0 ? cumulative[j - 1] : new Array(n).fill(0);
+						const topPts = top
+							.map((v, i) => `${getX(i).toFixed(1)},${toY(v).toFixed(1)}`)
+							.join(' ');
+						const botPts = bottom
+							.slice()
+							.reverse()
+							.map(
+								(v, i) => `${getX(n - 1 - i).toFixed(1)},${toY(v).toFixed(1)}`,
+							)
+							.join(' ');
+						const areaPts = `${getX(0).toFixed(1)},${toY(bottom[0]).toFixed(1)} ${topPts} ${getX(n - 1).toFixed(1)},${toY(bottom[n - 1]).toFixed(1)} ${botPts}`;
+						const fill = hexToRgba(colors[j % colors.length], fillOpacity);
+						polys.push(
+							`<polygon points="${areaPts}" fill="${fill}" stroke="none" />`,
+						);
+						lines.push(
+							`<polyline points="${topPts}" fill="none" stroke="${colors[j % colors.length]}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" />`,
+						);
+					}
+					return svg`<svg viewBox="0 0 100 60" preserveAspectRatio="none" style="width:100%;height:100%;">
+																			${polys.join('')}
+																			${lines.join('')}
+																		</svg>`;
+				})
+				.catch(
+					() =>
+						svg`<svg viewBox="0 0 100 60" preserveAspectRatio="none" style="width:100%;height:100%;"><text x="50" y="30" text-anchor="middle" font-size="8" fill="#aaa" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">no history</text></svg>`,
+				);
+			areaCache.set(cacheKey, { ts: end.getTime(), promise });
+		}
+		const tpl = areaCache.get(cacheKey)!.promise;
 		return until(
 			tpl,
 			html`<div style="color:#aaa;font-size:10px;">loading</div>`,
