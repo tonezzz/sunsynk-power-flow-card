@@ -275,6 +275,8 @@ async function mountSurface3d(
 					autoRotate: def.auto_rotate ?? false,
 					alpha: 18,
 					beta: 35,
+					rotateSensitivity: def.rotate_sensitivity ?? 3,
+					zoomSensitivity: def.zoom_sensitivity ?? 1,
 				},
 			},
 			visualMap: {
