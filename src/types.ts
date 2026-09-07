@@ -89,6 +89,7 @@ export interface PfgChartDef {
 	steps?: PfgChartDef[][];
 	groups?: { label?: string; charts?: PfgChartDef[]; chart?: PfgChartDef }[];
 	direction?: 'vertical' | 'horizontal';
+	group_gap?: number;
 	interval?: number;
 }
 

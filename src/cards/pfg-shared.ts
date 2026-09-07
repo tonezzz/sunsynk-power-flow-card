@@ -85,6 +85,7 @@ export function renderPfgChart(
 		const groups = chartDef.groups ?? [];
 		if (!groups.length) return undefined;
 		const horiz = chartDef.direction === 'horizontal';
+		const groupGap = Math.max(0, Math.min(chartDef.group_gap ?? 1, 15));
 		return html`<div
 			style="position:absolute;inset:0;display:flex;flex-direction:${
 				horiz ? 'row' : 'column'
@@ -95,7 +96,7 @@ export function renderPfgChart(
 					<div
 						style="position:relative;flex:1 1 0;min-height:0;min-width:0;overflow:hidden;${
 							gi
-								? `${horiz ? 'margin-left' : 'margin-top'}:3%;`
+								? `${horiz ? 'margin-left' : 'margin-top'}:${groupGap}%;`
 								: ''
 						}"
 					>
