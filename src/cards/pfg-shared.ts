@@ -95,7 +95,7 @@ export function renderPfgChart(
 					<div
 						style="position:relative;flex:1 1 0;min-height:0;min-width:0;overflow:hidden;${
 							gi
-								? `border-${horiz ? 'left' : 'top'}:1px solid rgba(255,255,255,0.25);`
+								? `${horiz ? 'margin-left' : 'margin-top'}:2%;`
 								: ''
 						}"
 					>
