@@ -309,8 +309,8 @@ export const pfgCard = (
 										? `position:absolute;bottom:2%;left:2.5%;width:95%;height:${i.def.height ?? '35%'};`
 										: pos === 'top'
 											? 'position:absolute;top:6%;left:2.5%;width:95%;height:56%;'
-											: pos === 'cycle'
-												? 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;'
+											: pos === 'bg' || pos === 'cycle'
+												? `position:absolute;inset:0;width:100%;height:100%;pointer-events:none;${i.def.opacity != null ? `opacity:${i.def.opacity};` : ''}`
 												: 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:95%;height:70%;';
 								return html`<div style="${style}">${i.tpl}</div>`;
 							});

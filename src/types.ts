@@ -77,8 +77,9 @@ export interface PfgChartDef {
 	label?: string;
 	orientation?: 'vertical' | 'horizontal';
 	needle?: boolean;
-	position?: 'center' | 'bottom' | 'top' | 'cycle';
+	position?: 'center' | 'bottom' | 'top' | 'cycle' | 'bg';
 	height?: string;
+	opacity?: number;
 	segments?: { from: number; color: string }[];
 	series?: PfgChartDef[];
 	steps?: PfgChartDef[][];
