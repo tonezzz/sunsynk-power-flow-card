@@ -81,6 +81,45 @@ export function renderPfgChart(
 		></pfg-cycle>`;
 	}
 
+	if (chartDef.type === 'group') {
+		const groups = chartDef.groups ?? [];
+		if (!groups.length) return undefined;
+		const horiz = chartDef.direction === 'horizontal';
+		return html`<div
+			style="position:absolute;inset:0;display:flex;flex-direction:${
+				horiz ? 'row' : 'column'
+			};"
+		>
+			${groups.map(
+				(g, gi) => html`
+					<div
+						style="position:relative;flex:1 1 0;min-height:0;min-width:0;overflow:hidden;${
+							gi
+								? `border-${horiz ? 'left' : 'top'}:1px solid rgba(255,255,255,0.25);`
+								: ''
+						}"
+					>
+						${
+							g.label
+								? html`<div
+										style="position:absolute;top:1%;left:0;right:0;text-align:center;font-weight:bold;font-size:min(1.8vw,12px);color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.9);z-index:3;pointer-events:none;"
+									>
+										${g.label}
+									</div>`
+								: ''
+						}
+						${(g.charts ?? (g.chart ? [g.chart] : [])).map(
+							(d) =>
+								html`<div style="position:absolute;inset:0;">
+									${renderPfgChart(d, c, hass, suppressLabel)}
+								</div>`,
+						)}
+					</div>
+				`,
+			)}
+		</div>`;
+	}
+
 	if (chartDef.type === 'bars') {
 		const series = chartDef.series ?? [];
 		if (!series.length) return undefined;
