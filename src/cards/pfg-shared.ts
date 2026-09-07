@@ -138,7 +138,7 @@ export function renderPfgChart(
 						const fillH = trackH * r.sPct;
 						return svg`
 							<rect x="${x}" y="${trackY}" width="${w}" height="${trackH}" rx="3" fill="none" stroke="${r.sBg}" stroke-width="1.5" />
-							<rect x="${x + 1.5}" y="${trackY + trackH - fillH}" width="${w - 3}" height="${fillH}" rx="2" fill="${r.sColor}" />
+							<rect x="${x + 1.5}" y="${trackY + trackH - fillH}" width="${w - 3}" height="${fillH}" rx="2" fill="${r.sColor}" style="filter:drop-shadow(0 2px 3px rgba(0,0,0,0.55));" />
 						`;
 					})}
 				</svg>
@@ -172,7 +172,7 @@ export function renderPfgChart(
 				${rows.map(
 					(r) => svg`
 						<rect x="1" y="${r.barY}" width="98" height="${r.barH}" rx="3" fill="none" stroke="${r.sBg}" stroke-width="1.5" />
-						<rect x="2.5" y="${r.barY + 1.5}" width="${95 * r.sPct}" height="${r.barH - 3}" rx="2" fill="${r.sColor}" />
+						<rect x="2.5" y="${r.barY + 1.5}" width="${95 * r.sPct}" height="${r.barH - 3}" rx="2" fill="${r.sColor}" style="filter:drop-shadow(0 2px 3px rgba(0,0,0,0.55));" />
 					`,
 				)}
 			</svg>
