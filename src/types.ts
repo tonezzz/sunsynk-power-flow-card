@@ -80,6 +80,7 @@ export interface PfgChartDef {
 	position?: 'center' | 'bottom' | 'top' | 'cycle' | 'bg';
 	height?: string;
 	opacity?: number;
+	scrim?: boolean;
 	segments?: { from: number; color: string }[];
 	series?: PfgChartDef[];
 	steps?: PfgChartDef[][];

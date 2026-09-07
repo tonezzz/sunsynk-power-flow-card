@@ -351,8 +351,12 @@ export function renderPfgChart(
 						pts = `0,${y.toFixed(1)} ${width},${y.toFixed(1)}`;
 					}
 					const areaPts = `0,${height} ${pts} ${width},${height}`;
+					const midY = pad + graphH / 2;
 					return svg`<svg viewBox="0 0 100 60" preserveAspectRatio="none" style="width:100%;height:100%;">
+																		<line x1="0" y1="${midY}" x2="${width}" y2="${midY}" stroke="rgba(255,255,255,0.18)" stroke-width="0.8" />
+																		<line x1="0" y1="${height - pad}" x2="${width}" y2="${height - pad}" stroke="rgba(255,255,255,0.3)" stroke-width="1" />
 																		<polygon points="${areaPts}" fill="${fillColor}" />
+																		<polyline points="${pts}" fill="none" stroke="rgba(0,0,0,0.65)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
 																		<polyline points="${pts}" fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
 																	</svg>`;
 				})

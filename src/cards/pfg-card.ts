@@ -310,7 +310,7 @@ export const pfgCard = (
 										: pos === 'top'
 											? 'position:absolute;top:6%;left:2.5%;width:95%;height:56%;'
 											: pos === 'bg'
-												? `position:absolute;bottom:0;left:0;width:100%;height:50%;pointer-events:none;${i.def.opacity != null ? `opacity:${i.def.opacity};` : ''}`
+												? `position:absolute;bottom:0;left:0;width:100%;height:50%;pointer-events:none;${i.def.opacity != null ? `opacity:${i.def.opacity};` : ''}${i.def.scrim ? 'background:linear-gradient(to top,rgba(0,0,0,0.45),rgba(0,0,0,0.15) 60%,transparent);' : ''}`
 												: pos === 'cycle'
 													? `position:absolute;inset:0;width:100%;height:100%;pointer-events:none;${i.def.opacity != null ? `opacity:${i.def.opacity};` : ''}`
 													: 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:95%;height:70%;';
