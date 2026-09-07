@@ -338,13 +338,18 @@ export function renderPfgChart(
 					const pad = 4;
 					const graphH = height - pad * 2;
 					const count = values.length || 1;
-					const pts = values
+					let pts = values
 						.map((v: number, i: number) => {
 							const x = (i / (count - 1)) * width;
 							const y = pad + graphH - ((v - effectiveMin) / range) * graphH;
 							return `${x.toFixed(1)},${y.toFixed(1)}`;
 						})
 						.join(' ');
+					if (values.length === 1) {
+						const y =
+							pad + graphH - ((values[0] - effectiveMin) / range) * graphH;
+						pts = `0,${y.toFixed(1)} ${width},${y.toFixed(1)}`;
+					}
 					const areaPts = `0,${height} ${pts} ${width},${height}`;
 					return svg`<svg viewBox="0 0 100 60" preserveAspectRatio="none" style="width:100%;height:100%;">
 																		<polygon points="${areaPts}" fill="${fillColor}" />
