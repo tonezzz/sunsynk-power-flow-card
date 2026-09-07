@@ -20,13 +20,101 @@ export function hexToRgba(hex: string, alpha: number): string {
 	const b = parseInt(clean.substring(4, 6), 16);
 	return `rgba(${r},${g},${b},${alpha})`;
 }
+type HistoryPoint = { t: number; v: number };
+type HistoryList = HistoryPoint[];
+
+function parseHistoryPoint(p: {
+	s?: unknown;
+	state?: unknown;
+	lu?: number;
+	last_updated?: string;
+	last_changed?: string;
+}): HistoryPoint | null {
+	const stateStr = p.s !== undefined ? p.s : p.state;
+	const time =
+		p.lu !== undefined
+			? p.lu
+			: new Date(p.last_updated ?? p.last_changed ?? 0).getTime() / 1000;
+	const v = parseFloat(String(stateStr));
+	return typeof time === 'number' && !isNaN(v) ? { t: time, v } : null;
+}
+
+function fetchHistorySeries(
+	hass: HomeAssistant,
+	entityIds: string[],
+	hours: number,
+): Promise<HistoryList[]> {
+	const end = new Date();
+	const start = new Date(end.getTime() - hours * 60 * 60 * 1000);
+	const h = hass as HomeAssistant & {
+		callWS?: <T>(msg: object) => Promise<T>;
+		callApi?: (method: string, path: string) => Promise<unknown>;
+	};
+	const call = h.callWS
+		? h.callWS({
+				type: 'history/history_during_period',
+				start_time: start.toISOString(),
+				end_time: end.toISOString(),
+				entity_ids: entityIds,
+				minimal_response: true,
+				no_attributes: true,
+				significant_changes_only: false,
+				include_start_time_state: true,
+			})
+		: h.callApi
+			? h.callApi(
+					'GET',
+					`history/period/${start.toISOString()}?end_time=${encodeURIComponent(end.toISOString())}&filter_entity_id=${entityIds.map(encodeURIComponent).join(',')}`,
+				)
+			: Promise.resolve(null);
+	return call.then((resp: unknown) => {
+		const seriesLists: unknown[] = Array.isArray(resp)
+			? resp
+			: entityIds.map(
+					(e) => (resp && (resp as Record<string, unknown>)[e]) || [],
+				);
+		const lists = seriesLists.filter((l) => Array.isArray(l)) as {
+			s?: unknown;
+			state?: unknown;
+			lu?: number;
+			last_updated?: string;
+			last_changed?: string;
+		}[][];
+		return lists.map((l) =>
+			l
+				.map(parseHistoryPoint)
+				.filter((p): p is HistoryPoint => p !== null)
+				.sort((a, b) => a.t - b.t),
+		);
+	});
+}
+
+function mergeHistoryByTimestamp(
+	lists: HistoryList[],
+	scale: number,
+): { t: number; values: number[] }[] {
+	const allTimes = new Set<number>();
+	for (const l of lists) for (const p of l) allTimes.add(p.t);
+	const sorted = Array.from(allTimes).sort((a, b) => a.t - b.t);
+	const out = sorted.map((t) => ({
+		t,
+		values: new Array(lists.length).fill(0),
+	}));
+	const idx = new Array(lists.length).fill(0);
+	for (let i = 0; i < sorted.length; i++) {
+		const t = sorted[i];
+		for (let s = 0; s < lists.length; s++) {
+			const l = lists[s];
+			while (idx[s] < l.length && l[idx[s]].t <= t) {
+				out[i].values[s] = l[idx[s]].v * scale;
+				idx[s]++;
+			}
+		}
+	}
+	return out;
+}
 
 export const historyCache = new Map<
-	string,
-	{ ts: number; promise: Promise<ReturnType<typeof svg>> }
->();
-
-const areaCache = new Map<
 	string,
 	{ ts: number; promise: Promise<ReturnType<typeof svg>> }
 >();
@@ -200,8 +288,8 @@ export function renderPfgChart(
 						<span
 							style="position:absolute;${
 								chartDef.value_rotate
-									? `left:${r.i * colW + colW / 2}%;bottom:18%;transform:translateX(-50%);writing-mode:sideways-lr;font-size:min(2.2vw,16px);`
-									: `left:${r.i * colW}%;top:2%;width:${colW}%;font-size:min(2.2vw,15px);`
+									? `left:${r.i * colW + colW / 2}%;bottom:${chartDef.value_offset ?? '18%'};transform:translateX(-50%);writing-mode:sideways-lr;font-size:${chartDef.value_font_size ?? 'min(2.2vw,16px)'};`
+									: `left:${r.i * colW}%;top:${chartDef.value_offset ?? '2%'};width:${colW}%;font-size:${chartDef.value_font_size ?? 'min(2.2vw,15px)'};`
 							}text-align:center;font-weight:bold;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;overflow:visible;"
 							>${r.sVal}</span
 						>
@@ -289,7 +377,9 @@ export function renderPfgChart(
 															<text x="50" y="95" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="bold" fill="#fff" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));;transform:translateY(-10px)">${displayVal}</text>
 															${chartDef.label && !suppressLabel ? svg`<text x="50" y="8" text-anchor="middle" font-size="8" font-weight="bold" fill="#aaa" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">${chartDef.label}</text>` : ''}
 														</svg>`;
-	} else if (chartDef.type === 'history') {
+	} else if (chartDef.type === 'history' || chartDef.type === 'area') {
+		const isArea = chartDef.type === 'area';
+		const stack = isArea || (chartDef as any).stack;
 		const entityIds = ents;
 		const hours = chartDef.hours ?? 24;
 		const end = new Date();
@@ -298,101 +388,94 @@ export function renderPfgChart(
 		const dataMin = min * scale;
 		const strokeColor = chartDef.stroke || activeColor || '#00E676';
 		const fillColor = chartDef.fill || hexToRgba(strokeColor, 0.25);
-		const cacheKey = `${entityIds.join('+')}:${hours}:${Math.floor(end.getTime() / (5 * 60 * 1000))}`;
+		const colors = chartDef.colors ?? [
+			'#00E676',
+			'#ffb300',
+			'#ff5252',
+			'#4fc3f7',
+			'#5fb6ad',
+		];
+		const strokeWidth = chartDef.stroke_width ?? (stack ? 0.5 : 2);
+		const fillOpacity = chartDef.fill_opacity ?? 0.25;
+		const cacheKey = `${entityIds.join('+')}:${hours}:${Math.floor(end.getTime() / (5 * 60 * 1000))}:${stack ? '1' : '0'}`;
 		if (
 			!historyCache.has(cacheKey) ||
 			(historyCache.get(cacheKey)?.ts || 0) < end.getTime() - 5 * 60 * 1000
 		) {
-			const h = hass as HomeAssistant & {
-				callWS?: <T>(msg: object) => Promise<T>;
-				callApi?: (method: string, path: string) => Promise<unknown>;
-			};
-			const call = h.callWS
-				? h.callWS({
-						type: 'history/history_during_period',
-						start_time: start.toISOString(),
-						end_time: end.toISOString(),
-						entity_ids: entityIds,
-						minimal_response: true,
-						no_attributes: true,
-						significant_changes_only: false,
-						include_start_time_state: true,
-					})
-				: h.callApi
-					? h.callApi(
-							'GET',
-							`history/period/${start.toISOString()}?end_time=${encodeURIComponent(end.toISOString())}&filter_entity_id=${entityIds.map(encodeURIComponent).join(',')}`,
-						)
-					: Promise.resolve(null);
-			const promise = call
-				.then((resp: unknown) => {
-					const seriesLists: unknown[] = Array.isArray(resp)
-						? resp
-						: entityIds.map(
-								(e) => (resp && (resp as Record<string, unknown>)[e]) || [],
-							);
-					const lists = seriesLists.filter((l) => Array.isArray(l));
-					const list =
-						lists.length > 1
-							? (() => {
-									const n = Math.min(
-										...lists.map((l) => (l as unknown[]).length),
-									);
-									const out: { s: number; lu?: number }[] = [];
-									for (let i = 0; i < n; i++) {
-										let v = 0;
-										for (const l of lists) {
-											const pt = (l as { s?: unknown; state?: unknown }[])[i];
-											v += parseFloat(String(pt?.s ?? pt?.state ?? 0)) || 0;
-										}
-										const t0 = (lists[0] as { lu?: number }[])[i];
-										out.push({ s: v, lu: t0?.lu });
-									}
-									return out;
-								})()
-							: lists[0] || [];
-					const points = list
-						.map(
-							(p: {
-								s?: unknown;
-								state?: unknown;
-								lu?: number;
-								last_updated?: string;
-								last_changed?: string;
-							}) => {
-								const stateStr = p.s !== undefined ? p.s : p.state;
-								const time =
-									p.lu !== undefined
-										? p.lu
-										: new Date(
-												p.last_updated ?? p.last_changed ?? 0,
-											).getTime() / 1000;
-								const v = parseFloat(String(stateStr));
-								return { t: time, v: isNaN(v) ? 0 : v };
-							},
-						)
-						.filter(
-							(p: { t: number; v: number }) =>
-								typeof p.t === 'number' && !isNaN(p.v),
-						);
-					points.sort(
-						(a: { t: number; v: number }, b: { t: number; v: number }) =>
-							a.t - b.t,
-					);
-					const values = points.map(
-						(p: { t: number; v: number }) => p.v * scale,
-					);
-					const effectiveMax = Math.max(dataMax, ...values, dataMin + 1);
-					const effectiveMin = Math.min(dataMin, ...values);
-					const range =
-						effectiveMax === effectiveMin ? 1 : effectiveMax - effectiveMin;
+			const promise = fetchHistorySeries(hass, entityIds, hours)
+				.then((lists) => {
+					if (lists.length === 0 || lists.every((l) => l.length === 0)) {
+						return svg`<svg viewBox="0 0 100 60" preserveAspectRatio="none" style="width:100%;height:100%;"><text x="50" y="30" text-anchor="middle" font-size="8" fill="#aaa" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">no history</text></svg>`;
+					}
+					const merged = mergeHistoryByTimestamp(lists, scale);
 					const width = 100;
 					const height = 60;
 					const pad = 4;
 					const graphH = height - pad * 2;
+					if (stack) {
+						const numSeries = lists.length;
+						const cumulative: number[][] = Array.from(
+							{ length: numSeries },
+							() => [],
+						);
+						const totals: number[] = [];
+						for (let i = 0; i < merged.length; i++) {
+							let sum = 0;
+							for (let j = 0; j < numSeries; j++) {
+								sum += merged[i].values[j] ?? 0;
+								cumulative[j][i] = sum;
+							}
+							totals[i] = sum;
+						}
+						const allValues = merged.flatMap((m) => m.values);
+						const effectiveMax = Math.max(dataMax, ...totals, dataMin + 1);
+						const effectiveMin = Math.min(dataMin, ...allValues);
+						const range =
+							effectiveMax === effectiveMin ? 1 : effectiveMax - effectiveMin;
+						const toY = (v: number) =>
+							pad + graphH - ((v - effectiveMin) / range) * graphH;
+						const getX = (i: number) =>
+							merged.length === 1
+								? i === 0
+									? 0
+									: width
+								: (i / (merged.length - 1)) * width;
+						const layers: ReturnType<typeof svg>[] = [];
+						for (let j = 0; j < numSeries; j++) {
+							const top = cumulative[j];
+							const bottom =
+								j > 0 ? cumulative[j - 1] : new Array(merged.length).fill(0);
+							const topPts = top
+								.map((v, i) => `${getX(i).toFixed(1)},${toY(v).toFixed(1)}`)
+								.join(' ');
+							const botPts = bottom
+								.slice()
+								.reverse()
+								.map(
+									(v, i) =>
+										`${getX(merged.length - 1 - i).toFixed(1)},${toY(v).toFixed(1)}`,
+								)
+								.join(' ');
+							const areaPts = `${getX(0).toFixed(1)},${toY(bottom[0]).toFixed(1)} ${topPts} ${getX(merged.length - 1).toFixed(1)},${toY(bottom[merged.length - 1]).toFixed(1)} ${botPts}`;
+							const fill = hexToRgba(colors[j % colors.length], fillOpacity);
+							const color = colors[j % colors.length];
+							layers.push(
+								svg`<polygon points="${areaPts}" fill="${fill}" stroke="none" />
+									<polyline points="${topPts}" fill="none" stroke="${color}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" />`,
+							);
+						}
+						return svg`<svg viewBox="0 0 100 60" preserveAspectRatio="none" style="width:100%;height:100%;">
+																					${layers}
+																				</svg>`;
+					}
+					const values = merged.map((m) => m.values.reduce((a, b) => a + b, 0));
+					const effectiveMax = Math.max(dataMax, ...values, dataMin + 1);
+					const effectiveMin = Math.min(dataMin, ...values);
+					const range =
+						effectiveMax === effectiveMin ? 1 : effectiveMax - effectiveMin;
 					const count = values.length || 1;
 					let pts = values
-						.map((v: number, i: number) => {
+						.map((v, i) => {
 							const x = (i / (count - 1)) * width;
 							const y = pad + graphH - ((v - effectiveMin) / range) * graphH;
 							return `${x.toFixed(1)},${y.toFixed(1)}`;
@@ -406,12 +489,12 @@ export function renderPfgChart(
 					const areaPts = `0,${height} ${pts} ${width},${height}`;
 					const midY = pad + graphH / 2;
 					return svg`<svg viewBox="0 0 100 60" preserveAspectRatio="none" style="width:100%;height:100%;">
-																		<line x1="0" y1="${midY}" x2="${width}" y2="${midY}" stroke="rgba(255,255,255,0.18)" stroke-width="0.8" />
-																		<line x1="0" y1="${height - pad}" x2="${width}" y2="${height - pad}" stroke="rgba(255,255,255,0.3)" stroke-width="1" />
-																		<polygon points="${areaPts}" fill="${fillColor}" />
-																		<polyline points="${pts}" fill="none" stroke="rgba(0,0,0,0.65)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
-																		<polyline points="${pts}" fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-																	</svg>`;
+																					<line x1="0" y1="${midY}" x2="${width}" y2="${midY}" stroke="rgba(255,255,255,0.18)" stroke-width="0.8" />
+																					<line x1="0" y1="${height - pad}" x2="${width}" y2="${height - pad}" stroke="rgba(255,255,255,0.3)" stroke-width="1" />
+																					<polygon points="${areaPts}" fill="${fillColor}" />
+																					<polyline points="${pts}" fill="none" stroke="rgba(0,0,0,0.65)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+																					<polyline points="${pts}" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" />
+																				</svg>`;
 				})
 				.catch(
 					() =>
@@ -420,151 +503,6 @@ export function renderPfgChart(
 			historyCache.set(cacheKey, { ts: end.getTime(), promise });
 		}
 		const tpl = historyCache.get(cacheKey)!.promise;
-		return until(
-			tpl,
-			html`<div style="color:#aaa;font-size:10px;">loading</div>`,
-		);
-	} else if (chartDef.type === 'area') {
-		const entityIds = ents;
-		const hours = chartDef.hours ?? 24;
-		const end = new Date();
-		const start = new Date(end.getTime() - hours * 60 * 60 * 1000);
-		const dataMax = max * scale;
-		const dataMin = min * scale;
-		const colors = chartDef.colors ?? [
-			'#00E676',
-			'#ffb300',
-			'#ff5252',
-			'#4fc3f7',
-			'#5fb6ad',
-		];
-		const strokeWidth = chartDef.stroke_width ?? 1;
-		const fillOpacity = chartDef.fill_opacity ?? 0.25;
-		const cacheKey = `${entityIds.join('+')}:${hours}:${Math.floor(end.getTime() / (5 * 60 * 1000))}`;
-		if (
-			!areaCache.has(cacheKey) ||
-			(areaCache.get(cacheKey)?.ts || 0) < end.getTime() - 5 * 60 * 1000
-		) {
-			const h = hass as HomeAssistant & {
-				callWS?: <T>(msg: object) => Promise<T>;
-				callApi?: (method: string, path: string) => Promise<unknown>;
-			};
-			const call = h.callWS
-				? h.callWS({
-						type: 'history/history_during_period',
-						start_time: start.toISOString(),
-						end_time: end.toISOString(),
-						entity_ids: entityIds,
-						minimal_response: true,
-						no_attributes: true,
-						significant_changes_only: false,
-						include_start_time_state: true,
-					})
-				: h.callApi
-					? h.callApi(
-							'GET',
-							`history/period/${start.toISOString()}?end_time=${encodeURIComponent(end.toISOString())}&filter_entity_id=${entityIds.map(encodeURIComponent).join(',')}`,
-						)
-					: Promise.resolve(null);
-			const promise = call
-				.then((resp: unknown) => {
-					const seriesLists: unknown[] = Array.isArray(resp)
-						? resp
-						: entityIds.map(
-								(e) => (resp && (resp as Record<string, unknown>)[e]) || [],
-							);
-					const lists = seriesLists
-						.filter((l) => Array.isArray(l))
-						.map((l) =>
-							(
-								l as {
-									s?: unknown;
-									state?: unknown;
-									lu?: number;
-									last_updated?: string;
-									last_changed?: string;
-								}[]
-							)
-								.map((p) => {
-									const stateStr = p.s !== undefined ? p.s : p.state;
-									const time =
-										p.lu !== undefined
-											? p.lu
-											: new Date(
-													p.last_updated ?? p.last_changed ?? 0,
-												).getTime() / 1000;
-									const v = parseFloat(String(stateStr));
-									return { t: time, v: isNaN(v) ? 0 : v };
-								})
-								.filter(
-									(p: { t: number; v: number }) =>
-										typeof p.t === 'number' && !isNaN(p.v),
-								)
-								.sort(
-									(a: { t: number; v: number }, b: { t: number; v: number }) =>
-										a.t - b.t,
-								),
-						);
-					const n = Math.min(...lists.map((l) => l.length)) || 0;
-					const series: number[][] = lists.map((l) =>
-						l.slice(0, n).map((p) => p.v * scale),
-					);
-					const totals: number[] = [];
-					const cumulative: number[][] = [];
-					for (let i = 0; i < n; i++) {
-						let sum = 0;
-						for (let j = 0; j < series.length; j++) {
-							sum += series[j][i];
-							cumulative[j] = cumulative[j] || [];
-							cumulative[j][i] = sum;
-						}
-						totals[i] = sum;
-					}
-					const effectiveMax = Math.max(dataMax, ...totals, dataMin + 1);
-					const effectiveMin = Math.min(dataMin, ...series.flat());
-					const range =
-						effectiveMax === effectiveMin ? 1 : effectiveMax - effectiveMin;
-					const width = 100;
-					const height = 60;
-					const pad = 4;
-					const graphH = height - pad * 2;
-					const toY = (v: number) =>
-						pad + graphH - ((v - effectiveMin) / range) * graphH;
-					const getX = (i: number) =>
-						n === 1 ? (i === 0 ? 0 : width) : (i / (n - 1)) * width;
-					const layers: ReturnType<typeof svg>[] = [];
-					for (let j = 0; j < series.length; j++) {
-						const top = cumulative[j];
-						const bottom = j > 0 ? cumulative[j - 1] : new Array(n).fill(0);
-						const topPts = top
-							.map((v, i) => `${getX(i).toFixed(1)},${toY(v).toFixed(1)}`)
-							.join(' ');
-						const botPts = bottom
-							.slice()
-							.reverse()
-							.map(
-								(v, i) => `${getX(n - 1 - i).toFixed(1)},${toY(v).toFixed(1)}`,
-							)
-							.join(' ');
-						const areaPts = `${getX(0).toFixed(1)},${toY(bottom[0]).toFixed(1)} ${topPts} ${getX(n - 1).toFixed(1)},${toY(bottom[n - 1]).toFixed(1)} ${botPts}`;
-						const fill = hexToRgba(colors[j % colors.length], fillOpacity);
-						const color = colors[j % colors.length];
-						layers.push(
-							svg`<polygon points="${areaPts}" fill="${fill}" stroke="none" />
-								<polyline points="${topPts}" fill="none" stroke="${color}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" />`,
-						);
-					}
-					return svg`<svg viewBox="0 0 100 60" preserveAspectRatio="none" style="width:100%;height:100%;">
-																							${layers}
-																						</svg>`;
-				})
-				.catch(
-					() =>
-						svg`<svg viewBox="0 0 100 60" preserveAspectRatio="none" style="width:100%;height:100%;"><text x="50" y="30" text-anchor="middle" font-size="8" fill="#aaa" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">no history</text></svg>`,
-				);
-			areaCache.set(cacheKey, { ts: end.getTime(), promise });
-		}
-		const tpl = areaCache.get(cacheKey)!.promise;
 		return until(
 			tpl,
 			html`<div style="color:#aaa;font-size:10px;">loading</div>`,

@@ -58,7 +58,7 @@ export enum AutarkyType {
 	No = 'no',
 }
 
-export interface PfgChartDef {
+export interface PfgBaseChartDef {
 	type: 'gauge' | 'bar' | 'bars' | 'history' | 'area' | 'cycle' | 'group';
 	entity?: string;
 	entities?: string[];
@@ -68,33 +68,75 @@ export interface PfgChartDef {
 	max?: number;
 	hours?: number;
 	color?: string;
-	gradient?: { from: string; to: string };
 	bg?: string;
 	stroke?: string;
 	fill?: string;
-	stroke_width?: number;
-	fill_opacity?: number;
-	colors?: string[];
 	decimals?: number;
 	unit?: string;
 	label?: string;
-	orientation?: 'vertical' | 'horizontal';
-	needle?: boolean;
 	position?: 'center' | 'bottom' | 'top' | 'cycle' | 'bg';
 	height?: string;
 	opacity?: number;
 	scrim?: boolean;
 	segments?: { from: number; color: string }[];
+	orientation?: 'vertical' | 'horizontal';
+	needle?: boolean;
+	gradient?: { from: string; to: string };
 	bar_gap?: number;
 	value_rotate?: boolean;
+	value_offset?: string;
+	value_font_size?: string;
+	label_offset?: string;
+	label_font_size?: string;
 	chart_height?: number;
-	series?: PfgChartDef[];
-	steps?: PfgChartDef[][];
-	groups?: { label?: string; charts?: PfgChartDef[]; chart?: PfgChartDef }[];
-	direction?: 'vertical' | 'horizontal';
+	stroke_width?: number;
+	fill_opacity?: number;
+	colors?: string[];
 	group_gap?: number;
 	interval?: number;
 }
+
+export interface PfgGaugeChartDef extends PfgBaseChartDef {
+	type: 'gauge';
+}
+
+export interface PfgBarChartDef extends PfgBaseChartDef {
+	type: 'bar';
+}
+
+export interface PfgBarsChartDef extends PfgBaseChartDef {
+	type: 'bars';
+	series?: PfgChartDef[];
+}
+
+export interface PfgHistoryChartDef extends PfgBaseChartDef {
+	type: 'history';
+	stack?: boolean;
+}
+
+export interface PfgAreaChartDef extends PfgBaseChartDef {
+	type: 'area';
+}
+
+export interface PfgCycleChartDef extends PfgBaseChartDef {
+	type: 'cycle';
+	steps?: PfgChartDef[][];
+}
+
+export interface PfgGroupChartDef extends PfgBaseChartDef {
+	type: 'group';
+	groups?: { label?: string; charts?: PfgChartDef[]; chart?: PfgChartDef }[];
+	direction?: 'vertical' | 'horizontal';
+}
+
+export type PfgChartDef =
+	| PfgGaugeChartDef
+	| PfgBarChartDef
+	| PfgBarsChartDef
+	| PfgHistoryChartDef
+	| PfgAreaChartDef
+	| PfgCycleChartDef
+	| PfgGroupChartDef;
 
 export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 	type: string;
