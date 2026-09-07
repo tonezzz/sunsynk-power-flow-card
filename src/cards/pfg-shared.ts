@@ -84,10 +84,11 @@ export function renderPfgChart(
 	if (chartDef.type === 'bars') {
 		const series = chartDef.series ?? [];
 		if (!series.length) return undefined;
-		const rowH = 100 / series.length;
-		// Bars stretch to the full tile width via preserveAspectRatio="none";
+		const n = series.length;
+		const vertical = chartDef.orientation === 'vertical';
+		// Bars stretch to the full tile via preserveAspectRatio="none";
 		// labels/values are HTML overlays so the text is not distorted.
-		const rows = series.map((s, i) => {
+		const items = series.map((s, i) => {
 			const sEnts: string[] =
 				s.entities && s.entities.length
 					? s.entities
@@ -112,22 +113,56 @@ export function renderPfgChart(
 				(col, seg) => (raw >= seg.from ? seg.color : col),
 				s.color ?? '#00E676',
 			);
-			const base = i * rowH;
-			const barY = base + rowH * 0.48;
-			const barH = rowH * 0.5;
-			const labelTop = base + rowH * 0.02;
 			return {
 				label: s.label ?? '',
 				sVal,
 				sColor,
 				sBg: s.bg ?? 'rgba(255,255,255,0.25)',
 				sPct,
-				barY,
-				barH,
-				labelTop,
-				midY: base + rowH * 0.48,
+				i,
 			};
 		});
+		if (vertical) {
+			const colW = 100 / n;
+			return html`<div style="position:relative;width:100%;height:100%;">
+				<svg
+					viewBox="0 0 100 100"
+					preserveAspectRatio="none"
+					style="position:absolute;inset:0;width:100%;height:100%;"
+				>
+					${items.map((r) => {
+						const x = r.i * colW + colW * 0.15;
+						const w = colW * 0.7;
+						const trackY = 24;
+						const trackH = 74;
+						const fillH = trackH * r.sPct;
+						return svg`
+							<rect x="${x}" y="${trackY}" width="${w}" height="${trackH}" rx="3" fill="none" stroke="${r.sBg}" stroke-width="1.5" />
+							<rect x="${x + 1.5}" y="${trackY + trackH - fillH}" width="${w - 3}" height="${fillH}" rx="2" fill="${r.sColor}" />
+						`;
+					})}
+				</svg>
+				${items.map(
+					(r) => html`
+						<span
+							style="position:absolute;left:${r.i * colW}%;top:0%;width:${colW}%;text-align:center;font-size:min(2.2vw,15px);font-weight:bold;color:#eee;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;overflow:hidden;"
+							>${r.label}</span
+						>
+						<span
+							style="position:absolute;left:${r.i * colW}%;top:12%;width:${colW}%;text-align:center;font-size:min(2.2vw,15px);font-weight:bold;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;overflow:hidden;"
+							>${r.sVal}</span
+						>
+					`,
+				)}
+			</div>`;
+		}
+		const rowH = 100 / n;
+		const rows = items.map((r) => ({
+			...r,
+			barY: r.i * rowH + rowH * 0.48,
+			barH: rowH * 0.5,
+			labelTop: r.i * rowH + rowH * 0.02,
+		}));
 		return html`<div style="position:relative;width:100%;height:100%;">
 			<svg
 				viewBox="0 0 100 100"
