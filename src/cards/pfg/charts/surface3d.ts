@@ -184,6 +184,8 @@ async function mountSurface3d(
 					alpha: 18,
 					beta: 35,
 					center: center,
+					rotateMouseButton: def.rotate_mouse_button ?? 'left',
+					panMouseButton: def.pan_mouse_button ?? 'middle',
 					rotateSensitivity: def.rotate_sensitivity ?? 3,
 					zoomSensitivity: def.zoom_sensitivity ?? 1,
 				},
