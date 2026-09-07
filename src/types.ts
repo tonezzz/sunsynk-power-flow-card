@@ -144,6 +144,8 @@ export interface PfgSurface3dChartDef extends PfgBaseChartDef {
 	auto_rotate?: boolean;
 	rotate_sensitivity?: number | [number, number];
 	zoom_sensitivity?: number;
+	rotate_mouse_button?: 'left' | 'middle' | 'right';
+	pan_mouse_button?: 'left' | 'middle' | 'right';
 	center?: [number, number, number];
 }
 
