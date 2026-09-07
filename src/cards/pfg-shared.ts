@@ -1,8 +1,9 @@
 import { LitElement, html, svg } from 'lit';
 import { until } from 'lit/directives/until.js';
+import { ref } from 'lit/directives/ref.js';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { PfgChartDef } from '../types';
+import { PfgChartDef, PfgSurface3dChartDef } from '../types';
 
 export const STATUS_COLORS: Record<string, string> = {
 	online: '#00E676',
@@ -119,6 +120,194 @@ export const historyCache = new Map<
 	{ ts: number; promise: Promise<ReturnType<typeof svg>> }
 >();
 
+// ---------- surface3d (echarts-gl via CDN, loaded on demand) ----------
+
+const ECHARTS_CDN = 'https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js';
+const ECHARTS_GL_CDN =
+	'https://cdn.jsdelivr.net/npm/echarts-gl@2.1.0/dist/echarts-gl.min.js';
+
+let echartsGlPromise: Promise<unknown> | null = null;
+function ensureEchartsGl(): Promise<unknown> {
+	const w = window as unknown as { echarts?: unknown };
+	if (w.echarts && echartsGlPromise) return echartsGlPromise;
+	if (!echartsGlPromise) {
+		const load = (src: string) =>
+			new Promise<void>((res, rej) => {
+				const s = document.createElement('script');
+				s.src = src;
+				s.onload = () => res();
+				s.onerror = () => rej(new Error(`script load failed: ${src}`));
+				document.head.appendChild(s);
+			});
+		echartsGlPromise = (async () => {
+			if (!w.echarts) await load(ECHARTS_CDN);
+			await load(ECHARTS_GL_CDN);
+			return w.echarts;
+		})();
+	}
+	return echartsGlPromise;
+}
+
+async function fetchHourlyDayGrid(
+	hass: HomeAssistant,
+	entity: string,
+	days: number,
+	scale: number,
+): Promise<{ grid: number[][]; dayLabels: string[] }> {
+	const end = new Date();
+	const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
+	const startMs = start.getTime();
+	const dayLabels: string[] = [];
+	for (let i = 0; i < days; i++) {
+		const d = new Date(startMs + i * 24 * 60 * 60 * 1000);
+		dayLabels.push(
+			d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
+		);
+	}
+	const sum: number[][] = Array.from({ length: days }, () =>
+		new Array(24).fill(0),
+	);
+	const cnt: number[][] = Array.from({ length: days }, () =>
+		new Array(24).fill(0),
+	);
+	const add = (t: number, v: number) => {
+		const di = Math.floor((t - startMs) / (24 * 60 * 60 * 1000));
+		if (di < 0 || di >= days) return;
+		const hr = new Date(t).getHours();
+		sum[di][hr] += v;
+		cnt[di][hr]++;
+	};
+	const h = hass as HomeAssistant & {
+		callWS?: <T>(msg: object) => Promise<T>;
+	};
+	if (h.callWS) {
+		try {
+			const resp = (await h.callWS({
+				type: 'recorder/statistics_during_period',
+				start_time: start.toISOString(),
+				end_time: end.toISOString(),
+				statistic_ids: [entity],
+				period: 'hour',
+			})) as Record<string, { start: number | string; mean?: number }[]>;
+			const stats = resp?.[entity] ?? [];
+			for (const s of stats) {
+				const t = new Date(s.start).getTime();
+				if (typeof s.mean === 'number') add(t, s.mean * scale);
+			}
+		} catch {
+			/* fall back to raw history below */
+		}
+	}
+	if (!cnt.flat().some((c) => c > 0)) {
+		const lists = await fetchHistorySeries(hass, [entity], days * 24);
+		for (const p of lists[0] ?? []) add(p.t * 1000, p.v * scale);
+	}
+	const grid = sum.map((row, di) =>
+		row.map((s, hr) => (cnt[di][hr] ? +(s / cnt[di][hr]).toFixed(2) : 0)),
+	);
+	return { grid, dayLabels };
+}
+
+async function mountSurface3d(
+	el: Element | undefined,
+	hass: HomeAssistant,
+	chartDef: PfgChartDef,
+): Promise<void> {
+	if (!el || (el as HTMLElement & { __pfg3d?: boolean }).__pfg3d) return;
+	(el as HTMLElement & { __pfg3d?: boolean }).__pfg3d = true;
+	const def = chartDef as PfgSurface3dChartDef;
+	const entity = def.entity ?? (def.entities && def.entities[0]);
+	try {
+		await ensureEchartsGl();
+		const days = Math.max(2, Math.min(def.days ?? 30, 90));
+		const { grid, dayLabels } = entity
+			? await fetchHourlyDayGrid(hass, entity, days, def.scale ?? 1)
+			: { grid: [], dayLabels: [] };
+		const echarts = (
+			window as unknown as { echarts: { init: (e: Element) => any } }
+		).echarts;
+		const flat: [number, number, number][] = [];
+		grid.forEach((row, d) =>
+			row.forEach((v, h) => flat.push([h, d, v])),
+		);
+		const unit = def.unit ?? '';
+		const chart = echarts.init(el);
+		chart.setOption({
+			backgroundColor: 'transparent',
+			tooltip: {
+				formatter: (p: { value: number[] }) =>
+					`${dayLabels[p.value[1]] ?? ''} ${String(p.value[0]).padStart(2, '0')}:00 — ${p.value[2]}${unit ? ' ' + unit : ''}`,
+			},
+			xAxis3D: {
+				type: 'value',
+				name: 'Hour',
+				min: 0,
+				max: 23,
+				interval: 3,
+				axisLabel: { color: '#9fb3c8' },
+			},
+			yAxis3D: {
+				type: 'value',
+				name: 'Day',
+				min: 0,
+				max: days - 1,
+				interval: Math.max(1, Math.floor(days / 8)),
+				axisLabel: {
+					color: '#9fb3c8',
+					formatter: (d: number) => dayLabels[d] ?? '',
+				},
+			},
+			zAxis3D: {
+				type: 'value',
+				name: unit,
+				min: def.min ?? 0,
+				axisLabel: { color: '#9fb3c8' },
+			},
+			grid3D: {
+				boxWidth: 160,
+				boxHeight: 60,
+				boxDepth: 120,
+				light: {
+					main: { intensity: 1.2 },
+					ambient: { intensity: 0.3 },
+				},
+				viewControl: {
+					autoRotate: def.auto_rotate ?? false,
+					alpha: 18,
+					beta: 35,
+				},
+			},
+			visualMap: {
+				show: false,
+				min: def.min ?? 0,
+				max: def.max ?? 7,
+				dimension: 2,
+				inRange: { color: ['#1a237e', '#00838f', '#ffd54f'] },
+			},
+			series: [
+				{
+					type: 'surface',
+					data: flat,
+					dataShape: [days, 24],
+					shading: 'lambert',
+					wireframe: {
+						show: def.wireframe ?? true,
+						lineStyle: {
+							color: 'rgba(255,255,255,0.25)',
+							width: 1,
+						},
+					},
+				},
+			],
+		});
+		new ResizeObserver(() => chart.resize()).observe(el as HTMLElement);
+	} catch (e) {
+		console.error('[pfg surface3d]', e);
+		(el as HTMLElement).innerHTML =
+			'<div style="color:#aaa;font-size:10px;text-align:center;padding-top:40%;">3d chart unavailable</div>';
+	}
+}
+
 export function stateToStatus(state?: string): string {
 	if (!state) return 'unknown';
 	const s = state.toLowerCase();
@@ -172,6 +361,15 @@ export function renderPfgChart(
 			.hass="${hass}"
 			.interval="${chartDef.interval ?? 3}"
 		></pfg-cycle>`;
+	}
+
+	if (chartDef.type === 'surface3d') {
+		return html`<div
+			${ref((el) => {
+				void mountSurface3d(el, hass, chartDef);
+			})}
+			style="position:absolute;inset:0;"
+		></div>`;
 	}
 
 	if (chartDef.type === 'group') {

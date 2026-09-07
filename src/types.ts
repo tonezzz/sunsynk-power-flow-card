@@ -59,7 +59,15 @@ export enum AutarkyType {
 }
 
 export interface PfgBaseChartDef {
-	type: 'gauge' | 'bar' | 'bars' | 'history' | 'area' | 'cycle' | 'group';
+	type:
+		| 'gauge'
+		| 'bar'
+		| 'bars'
+		| 'history'
+		| 'area'
+		| 'cycle'
+		| 'group'
+		| 'surface3d';
 	entity?: string;
 	entities?: string[];
 	value?: number;
@@ -129,6 +137,13 @@ export interface PfgGroupChartDef extends PfgBaseChartDef {
 	direction?: 'vertical' | 'horizontal';
 }
 
+export interface PfgSurface3dChartDef extends PfgBaseChartDef {
+	type: 'surface3d';
+	days?: number;
+	wireframe?: boolean;
+	auto_rotate?: boolean;
+}
+
 export type PfgChartDef =
 	| PfgGaugeChartDef
 	| PfgBarChartDef
@@ -136,7 +151,8 @@ export type PfgChartDef =
 	| PfgHistoryChartDef
 	| PfgAreaChartDef
 	| PfgCycleChartDef
-	| PfgGroupChartDef;
+	| PfgGroupChartDef
+	| PfgSurface3dChartDef;
 
 export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 	type: string;
