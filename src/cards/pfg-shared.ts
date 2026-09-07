@@ -112,7 +112,7 @@ export function renderPfgChart(
 							(d) =>
 								html`<div
 									style="position:absolute;left:0;right:0;top:${
-										g.label ? '14%' : '0'
+										g.label ? '10%' : '0'
 									};bottom:0;"
 								>
 									${renderPfgChart(d, c, hass, suppressLabel)}
