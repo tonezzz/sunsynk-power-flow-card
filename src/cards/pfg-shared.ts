@@ -227,9 +227,24 @@ async function mountSurface3d(
 			window as unknown as { echarts: { init: (e: Element) => any } }
 		).echarts;
 		const flat: [number, number, number][] = [];
+		let dataMax = Number.NEGATIVE_INFINITY;
 		grid.forEach((row, d) =>
-			row.forEach((v, h) => flat.push([h, d, v])),
+			row.forEach((v, h) => {
+				flat.push([h, d, v]);
+				if (v > dataMax) dataMax = v;
+			}),
 		);
+		const valueMin = def.min ?? 0;
+		const valueMax = def.max ?? Math.max(dataMax, valueMin + 1);
+		const valueMid = (valueMin + valueMax) / 2;
+		const boxWidth = 160;
+		const boxHeight = 60;
+		const boxDepth = 120;
+		const center: [number, number, number] = def.center ?? [
+			boxWidth * (11.5 / 23 - 0.5),
+			boxHeight * ((valueMid - valueMin) / (valueMax - valueMin) - 0.5),
+			boxDepth / 2,
+		];
 		const unit = def.unit ?? '';
 		const chart = echarts.init(el);
 		chart.setOption({
@@ -260,13 +275,14 @@ async function mountSurface3d(
 			zAxis3D: {
 				type: 'value',
 				name: unit,
-				min: def.min ?? 0,
+				min: valueMin,
+				max: valueMax,
 				axisLabel: { color: '#9fb3c8' },
 			},
 			grid3D: {
-				boxWidth: 160,
-				boxHeight: 60,
-				boxDepth: 120,
+				boxWidth: boxWidth,
+				boxHeight: boxHeight,
+				boxDepth: boxDepth,
 				light: {
 					main: { intensity: 1.2 },
 					ambient: { intensity: 0.3 },
@@ -275,14 +291,15 @@ async function mountSurface3d(
 					autoRotate: def.auto_rotate ?? false,
 					alpha: 18,
 					beta: 35,
+					center: center,
 					rotateSensitivity: def.rotate_sensitivity ?? 3,
 					zoomSensitivity: def.zoom_sensitivity ?? 1,
 				},
 			},
 			visualMap: {
 				show: false,
-				min: def.min ?? 0,
-				max: def.max ?? 7,
+				min: valueMin,
+				max: valueMax,
 				dimension: 2,
 				inRange: { color: ['#1a237e', '#00838f', '#ffd54f'] },
 			},
