@@ -193,7 +193,11 @@ export function renderPfgChart(
 							>${r.label}</span
 						>
 						<span
-							style="position:absolute;left:${r.i * colW}%;top:2%;width:${colW}%;text-align:center;font-size:min(2.2vw,15px);font-weight:bold;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;overflow:hidden;"
+							style="position:absolute;${
+								chartDef.value_rotate
+									? `left:${r.i * colW + colW / 2}%;bottom:2%;transform:translateX(-50%) rotate(-90deg);transform-origin:center bottom;font-size:min(1.8vw,13px);`
+									: `left:${r.i * colW}%;top:2%;width:${colW}%;font-size:min(2.2vw,15px);`
+							}text-align:center;font-weight:bold;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;overflow:visible;"
 							>${r.sVal}</span
 						>
 					`,

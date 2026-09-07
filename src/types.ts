@@ -83,6 +83,7 @@ export interface PfgChartDef {
 	scrim?: boolean;
 	segments?: { from: number; color: string }[];
 	bar_gap?: number;
+	value_rotate?: boolean;
 	series?: PfgChartDef[];
 	steps?: PfgChartDef[][];
 	groups?: { label?: string; charts?: PfgChartDef[]; chart?: PfgChartDef }[];
