@@ -532,8 +532,7 @@ export function renderPfgChart(
 						pad + graphH - ((v - effectiveMin) / range) * graphH;
 					const getX = (i: number) =>
 						n === 1 ? (i === 0 ? 0 : width) : (i / (n - 1)) * width;
-					const polys: string[] = [];
-					const lines: string[] = [];
+					const layers: ReturnType<typeof svg>[] = [];
 					for (let j = 0; j < series.length; j++) {
 						const top = cumulative[j];
 						const bottom = j > 0 ? cumulative[j - 1] : new Array(n).fill(0);
@@ -549,17 +548,15 @@ export function renderPfgChart(
 							.join(' ');
 						const areaPts = `${getX(0).toFixed(1)},${toY(bottom[0]).toFixed(1)} ${topPts} ${getX(n - 1).toFixed(1)},${toY(bottom[n - 1]).toFixed(1)} ${botPts}`;
 						const fill = hexToRgba(colors[j % colors.length], fillOpacity);
-						polys.push(
-							`<polygon points="${areaPts}" fill="${fill}" stroke="none" />`,
-						);
-						lines.push(
-							`<polyline points="${topPts}" fill="none" stroke="${colors[j % colors.length]}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" />`,
+						const color = colors[j % colors.length];
+						layers.push(
+							svg`<polygon points="${areaPts}" fill="${fill}" stroke="none" />
+								<polyline points="${topPts}" fill="none" stroke="${color}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" />`,
 						);
 					}
 					return svg`<svg viewBox="0 0 100 60" preserveAspectRatio="none" style="width:100%;height:100%;">
-																			${polys.join('')}
-																			${lines.join('')}
-																		</svg>`;
+																							${layers}
+																						</svg>`;
 				})
 				.catch(
 					() =>
