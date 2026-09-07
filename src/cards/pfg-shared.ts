@@ -110,7 +110,11 @@ export function renderPfgChart(
 						}
 						${(g.charts ?? (g.chart ? [g.chart] : [])).map(
 							(d) =>
-								html`<div style="position:absolute;inset:0;">
+								html`<div
+									style="position:absolute;left:0;right:0;top:${
+										g.label ? '14%' : '0'
+									};bottom:0;"
+								>
 									${renderPfgChart(d, c, hass, suppressLabel)}
 								</div>`,
 						)}
