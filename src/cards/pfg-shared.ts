@@ -85,44 +85,75 @@ export function renderPfgChart(
 		const series = chartDef.series ?? [];
 		if (!series.length) return undefined;
 		const rowH = 100 / series.length;
-		return svg`<svg viewBox="0 0 100 100" style="width:100%;height:100%;">
-			${series.map((s, i) => {
-				const sEnts: string[] =
-					s.entities && s.entities.length
-						? s.entities
-						: s.entity
-							? [s.entity]
-							: [];
-				const raw = sEnts.length
-					? sEnts.reduce(
-							(sum, e) => sum + (parseFloat(hass.states[e]?.state) || 0),
-							0,
-						)
-					: parseFloat(String(s.value ?? 0)) || 0;
-				const sMin = s.min ?? 0;
-				const sMax = s.max ?? 100;
-				const sPct = Math.min(
-					Math.max(sMax > sMin ? (raw - sMin) / (sMax - sMin) : 0, 0),
-					1,
-				);
-				const sVal = `${(raw * (s.scale ?? 1)).toFixed(s.decimals ?? 0)}${s.unit ? ` ${s.unit}` : ''}`;
-				const sSegs = [...(s.segments || [])].sort((a, b) => a.from - b.from);
-				const sColor = sSegs.reduce(
-					(col, seg) => (raw >= seg.from ? seg.color : col),
-					s.color ?? '#00E676',
-				);
-				const base = i * rowH;
-				const fontSize = Math.min(18, rowH * 0.5);
-				const barY = base + rowH * 0.48;
-				const barH = rowH * 0.5;
-				return svg`
-					<text x="1" y="${base + rowH * 0.32}" font-size="${fontSize}" font-weight="bold" fill="#eee" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">${s.label ?? ''}</text>
-					<text x="99" y="${base + rowH * 0.32}" text-anchor="end" font-size="${fontSize}" font-weight="bold" fill="#fff" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">${sVal}</text>
-					<rect x="1" y="${barY}" width="98" height="${barH}" rx="3" fill="none" stroke="${s.bg ?? 'rgba(255,255,255,0.25)'}" stroke-width="1.5" />
-					<rect x="2.5" y="${barY + 1.5}" width="${95 * sPct}" height="${barH - 3}" rx="2" fill="${sColor}" />
-				`;
-			})}
-		</svg>`;
+		// Bars stretch to the full tile width via preserveAspectRatio="none";
+		// labels/values are HTML overlays so the text is not distorted.
+		const rows = series.map((s, i) => {
+			const sEnts: string[] =
+				s.entities && s.entities.length
+					? s.entities
+					: s.entity
+						? [s.entity]
+						: [];
+			const raw = sEnts.length
+				? sEnts.reduce(
+						(sum, e) => sum + (parseFloat(hass.states[e]?.state) || 0),
+						0,
+					)
+				: parseFloat(String(s.value ?? 0)) || 0;
+			const sMin = s.min ?? 0;
+			const sMax = s.max ?? 100;
+			const sPct = Math.min(
+				Math.max(sMax > sMin ? (raw - sMin) / (sMax - sMin) : 0, 0),
+				1,
+			);
+			const sVal = `${(raw * (s.scale ?? 1)).toFixed(s.decimals ?? 0)}${s.unit ? ` ${s.unit}` : ''}`;
+			const sSegs = [...(s.segments || [])].sort((a, b) => a.from - b.from);
+			const sColor = sSegs.reduce(
+				(col, seg) => (raw >= seg.from ? seg.color : col),
+				s.color ?? '#00E676',
+			);
+			const base = i * rowH;
+			const barY = base + rowH * 0.48;
+			const barH = rowH * 0.5;
+			const labelTop = base + rowH * 0.02;
+			return {
+				label: s.label ?? '',
+				sVal,
+				sColor,
+				sBg: s.bg ?? 'rgba(255,255,255,0.25)',
+				sPct,
+				barY,
+				barH,
+				labelTop,
+				midY: base + rowH * 0.48,
+			};
+		});
+		return html`<div style="position:relative;width:100%;height:100%;">
+			<svg
+				viewBox="0 0 100 100"
+				preserveAspectRatio="none"
+				style="position:absolute;inset:0;width:100%;height:100%;"
+			>
+				${rows.map(
+					(r) => svg`
+						<rect x="1" y="${r.barY}" width="98" height="${r.barH}" rx="3" fill="none" stroke="${r.sBg}" stroke-width="1.5" />
+						<rect x="2.5" y="${r.barY + 1.5}" width="${95 * r.sPct}" height="${r.barH - 3}" rx="2" fill="${r.sColor}" />
+					`,
+				)}
+			</svg>
+			${rows.map(
+				(r) => html`
+					<span
+						style="position:absolute;left:2%;top:${r.labelTop}%;font-size:min(2.4vw,16px);font-weight:bold;color:#eee;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;"
+						>${r.label}</span
+					>
+					<span
+						style="position:absolute;right:2%;top:${r.labelTop}%;text-align:right;font-size:min(2.4vw,16px);font-weight:bold;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;"
+						>${r.sVal}</span
+					>
+				`,
+			)}
+		</div>`;
 	}
 
 	const ents: string[] =
