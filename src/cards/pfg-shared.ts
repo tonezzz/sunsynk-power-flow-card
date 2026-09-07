@@ -133,8 +133,8 @@ export function renderPfgChart(
 					${items.map((r) => {
 						const x = r.i * colW + colW * 0.15;
 						const w = colW * 0.7;
-						const trackY = 24;
-						const trackH = 74;
+						const trackY = 16;
+						const trackH = 64;
 						const fillH = trackH * r.sPct;
 						return svg`
 							<rect x="${x}" y="${trackY}" width="${w}" height="${trackH}" rx="3" fill="none" stroke="${r.sBg}" stroke-width="1.5" />
@@ -145,11 +145,11 @@ export function renderPfgChart(
 				${items.map(
 					(r) => html`
 						<span
-							style="position:absolute;left:${r.i * colW}%;top:0%;width:${colW}%;text-align:center;font-size:min(2.2vw,15px);font-weight:bold;color:#eee;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;overflow:hidden;"
+							style="position:absolute;left:${r.i * colW}%;top:86%;width:${colW}%;text-align:center;font-size:min(2.2vw,15px);font-weight:bold;color:#eee;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;overflow:hidden;"
 							>${r.label}</span
 						>
 						<span
-							style="position:absolute;left:${r.i * colW}%;top:12%;width:${colW}%;text-align:center;font-size:min(2.2vw,15px);font-weight:bold;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;overflow:hidden;"
+							style="position:absolute;left:${r.i * colW}%;top:2%;width:${colW}%;text-align:center;font-size:min(2.2vw,15px);font-weight:bold;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;overflow:hidden;"
 							>${r.sVal}</span
 						>
 					`,
