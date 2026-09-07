@@ -165,6 +165,8 @@ async function mountSurface3d(
 					autoRotate: def.auto_rotate ?? false,
 					alpha: 18,
 					beta: 35,
+					rotateSensitivity: def.rotate_sensitivity ?? 3,
+					zoomSensitivity: def.zoom_sensitivity ?? 1,
 				},
 			},
 			visualMap: {
@@ -206,6 +208,6 @@ export function renderSurface3d(
 		${ref((el) => {
 			void mountSurface3d(el, hass, def);
 		})}
-		style="position:absolute;inset:0;"
+		style="position:absolute;inset:0;pointer-events:auto;z-index:2;"
 	></div>`;
 }
