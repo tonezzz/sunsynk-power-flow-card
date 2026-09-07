@@ -9,7 +9,7 @@ export function resolveInverterProg(
 	card: SunsynkPowerFlowCard,
 	config: sunsynkPowerFlowCardConfig,
 	stateUseTimer: CustomEntity,
-	enableTimer: string | false,
+	enableTimer: string | boolean,
 	batteryShutdown: number,
 ): InverterSettings {
 	//Timer entities
