@@ -334,13 +334,21 @@ async function mountSurface3d(
 				const vv = clampV(ev?.value?.[2] ?? ev?.data?.[2]);
 				if (vv !== undefined) setPlane(vv);
 			});
-			// secondary: axis pointer value (cartesian3D axesInfo)
+			// secondary: axis pointer reports x (hour) + y (day) on the box
+			// walls — look up the surface's own grid value at that cell.
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			(chart as any).on('updateAxisPointer', (ev: any) => {
-				const zInfo = (ev?.axesInfo ?? []).find(
-					(a: { axisDim?: string }) => a.axisDim === 'z',
+				const infos = ev?.axesInfo ?? [];
+				const xi = infos.find(
+					(a: { axisDim?: string }) => a.axisDim === 'x',
 				);
-				const vv = clampV(zInfo?.value);
+				const yi = infos.find(
+					(a: { axisDim?: string }) => a.axisDim === 'y',
+				);
+				if (xi?.value == null || yi?.value == null) return;
+				const h = Math.max(0, Math.min(23, Math.round(xi.value)));
+				const d = Math.max(0, Math.min(days - 1, Math.round(yi.value)));
+				const vv = clampV(grid[d]?.[h]);
 				if (vv !== undefined) setPlane(vv);
 			});
 			// when the pointer leaves, return to mid height (still visible)
