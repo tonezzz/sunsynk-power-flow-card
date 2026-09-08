@@ -82,7 +82,7 @@ export interface PfgBaseChartDef {
 	decimals?: number;
 	unit?: string;
 	label?: string;
-	position?: 'center' | 'bottom' | 'top' | 'cycle' | 'bg';
+	position?: 'center' | 'bottom' | 'top' | 'cycle' | 'fill' | 'bg';
 	height?: string;
 	opacity?: number;
 	scrim?: boolean;

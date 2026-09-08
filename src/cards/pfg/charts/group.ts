@@ -1,7 +1,7 @@
 import { html } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { PfgGroupChartDef } from '../../../types';
-import { renderPfgChart } from '../index';
+import { renderPfgChart } from '../registry';
 
 export function renderGroup(
 	def: PfgGroupChartDef,

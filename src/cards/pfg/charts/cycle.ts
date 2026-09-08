@@ -2,7 +2,7 @@ import { LitElement, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { PfgChartDef, PfgCycleChartDef } from '../../../types';
-import { renderPfgChart } from '../index';
+import { renderPfgChart } from '../registry';
 import { chartOverlayStyle } from '../place';
 
 export function renderCycle(

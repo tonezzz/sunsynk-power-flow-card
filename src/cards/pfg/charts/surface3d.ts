@@ -6,10 +6,16 @@ import { fetchHistorySeries } from '../history';
 
 // ---------- surface3d (echarts-gl via CDN, loaded on demand) ----------
 
-const ECHARTS_CDN =
-	'https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js';
-const ECHARTS_GL_CDN =
-	'https://cdn.jsdelivr.net/npm/echarts-gl@2.1.0/dist/echarts-gl.min.js';
+// Vendored copies live in <ha>/config/www and are served at /local/ — try
+// them first so the chart works offline; fall back to the CDN.
+const ECHARTS_SRC = [
+	'/local/echarts-5.5.1.min.js',
+	'https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js',
+];
+const ECHARTS_GL_SRC = [
+	'/local/echarts-gl-2.1.0.min.js',
+	'https://cdn.jsdelivr.net/npm/echarts-gl@2.1.0/dist/echarts-gl.min.js',
+];
 
 let echartsGlPromise: Promise<unknown> | null = null;
 function ensureEchartsGl(): Promise<unknown> {
@@ -24,9 +30,21 @@ function ensureEchartsGl(): Promise<unknown> {
 				s.onerror = () => rej(new Error(`script load failed: ${src}`));
 				document.head.appendChild(s);
 			});
+		const loadFirst = async (srcs: string[]) => {
+			let err: unknown;
+			for (const src of srcs) {
+				try {
+					await load(src);
+					return;
+				} catch (e) {
+					err = e;
+				}
+			}
+			throw err;
+		};
 		echartsGlPromise = (async () => {
-			if (!w.echarts) await load(ECHARTS_CDN);
-			await load(ECHARTS_GL_CDN);
+			if (!w.echarts) await loadFirst(ECHARTS_SRC);
+			await loadFirst(ECHARTS_GL_SRC);
 			return w.echarts;
 		})();
 	}
