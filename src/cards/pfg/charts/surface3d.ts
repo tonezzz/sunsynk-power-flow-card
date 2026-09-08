@@ -196,9 +196,11 @@ async function mountSurface3d(
 					alpha: 18,
 					beta: 35,
 					center: center,
-					rotateMouseButton: def.rotate_mouse_button ?? 'left',
-					panMouseButton: def.pan_mouse_button ?? 'middle',
-					rotateSensitivity: def.rotate_sensitivity ?? 3,
+					// left drag is handled by our own event loop so it works over
+					// the rendered surface; middle/right still use OrbitControl
+					rotateMouseButton: def.rotate_mouse_button ?? 'middle',
+					panMouseButton: def.pan_mouse_button ?? 'right',
+					rotateSensitivity: 0,
 					zoomSensitivity: def.zoom_sensitivity ?? 1,
 				},
 			},
@@ -227,6 +229,67 @@ async function mountSurface3d(
 			],
 		});
 		new ResizeObserver(() => chart.resize()).observe(el as HTMLElement);
+		const host = el as HTMLElement;
+		host.style.touchAction = 'none';
+		let currentAlpha = 18;
+		let currentBeta = 35;
+		let dragging = false;
+		let startX = 0;
+		let startY = 0;
+		let alphaStart = 18;
+		let betaStart = 35;
+		const s = def.rotate_sensitivity ?? 3;
+		const sens = Array.isArray(s) ? s : [s, s];
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const chartAny = chart as any;
+		const getControl = () => chartAny?._components?.grid3D?.[0]?._control;
+		const updateCamera = (alpha: number, beta: number) => {
+			currentAlpha = alpha;
+			currentBeta = beta;
+			const control = getControl();
+			if (control?.setAlpha && control?.setBeta) {
+				control.setAlpha(alpha);
+				control.setBeta(beta);
+			} else {
+				chartAny.setOption(
+					{
+						grid3D: {
+							viewControl: {
+								alpha,
+								beta,
+							},
+						},
+					},
+					false,
+					false,
+				);
+			}
+		};
+		host.addEventListener('mousedown', (e: MouseEvent) => {
+			if (e.button !== 0) return;
+			dragging = true;
+			startX = e.clientX;
+			startY = e.clientY;
+			alphaStart = currentAlpha;
+			betaStart = currentBeta;
+			e.preventDefault();
+		});
+		const onMove = (e: MouseEvent) => {
+			if (!dragging) return;
+			const dx = e.clientX - startX;
+			const dy = e.clientY - startY;
+			const beta = betaStart + (dx * sens[0]) / 20;
+			const alpha = Math.max(
+				-90,
+				Math.min(90, alphaStart - (dy * sens[1]) / 20),
+			);
+			updateCamera(alpha, beta);
+		};
+		const onUp = () => {
+			dragging = false;
+		};
+		window.addEventListener('mousemove', onMove);
+		window.addEventListener('mouseup', onUp);
 	} catch (e) {
 		console.error('[pfg surface3d]', e);
 		(el as HTMLElement).innerHTML =
