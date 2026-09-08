@@ -18,7 +18,7 @@ const ECHARTS_GL_SRC = [
 ];
 
 let echartsGlPromise: Promise<unknown> | null = null;
-function ensureEchartsGl(): Promise<unknown> {
+export function ensureEchartsGl(): Promise<unknown> {
 	const w = window as unknown as { echarts?: unknown };
 	if (w.echarts && echartsGlPromise) return echartsGlPromise;
 	if (!echartsGlPromise) {
@@ -88,7 +88,7 @@ function writeCache(key: string, grid: number[][], dayLabels: string[]) {
 	}
 }
 
-async function fetchHourlyDayGrid(
+export async function fetchHourlyDayGrid(
 	hass: HomeAssistant,
 	entity: string,
 	days: number,
@@ -226,7 +226,6 @@ async function mountSurface3d(
 		})();
 		const unit = def.unit ?? '';
 		const chart = echarts.init(el);
-		console.log('[pfg surface3d] mounted');
 		chart.setOption({
 			backgroundColor: 'transparent',
 			tooltip: {

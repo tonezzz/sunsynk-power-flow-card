@@ -156,6 +156,20 @@ export interface PfgSurface3dChartDef extends PfgBaseChartDef {
 	hover_plane_color?: string; // default '#4fc3f7'
 }
 
+export interface PfgBar3dChartDef extends PfgBaseChartDef {
+	type: 'bar3d';
+	days?: number;
+	auto_rotate?: boolean;
+	rotate_sensitivity?: number | [number, number];
+	zoom_sensitivity?: number;
+	rotate_mouse_button?: 'left' | 'middle' | 'right';
+	pan_mouse_button?: 'left' | 'middle' | 'right';
+	cache?: number;
+	opacity?: number;
+	alpha?: number; // camera pitch (viewControl.alpha), default 18
+	beta?: number; // camera yaw (viewControl.beta), default 215
+}
+
 export type PfgChartDef =
 	| PfgGaugeChartDef
 	| PfgBarChartDef
@@ -164,7 +178,8 @@ export type PfgChartDef =
 	| PfgAreaChartDef
 	| PfgCycleChartDef
 	| PfgGroupChartDef
-	| PfgSurface3dChartDef;
+	| PfgSurface3dChartDef
+	| PfgBar3dChartDef;
 
 export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 	type: string;
