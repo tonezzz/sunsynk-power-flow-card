@@ -214,7 +214,7 @@ async function mountSurface3d(
 				min: 0,
 				max: days - 1,
 				interval: Math.max(1, Math.floor(days / 8)),
-				inverse: true,
+				inverse: false,
 				axisLabel: {
 					color: '#9fb3c8',
 					formatter: (d: number) => dayLabels[d] ?? '',
@@ -276,6 +276,7 @@ async function mountSurface3d(
 		new ResizeObserver(() => chart.resize()).observe(el as HTMLElement);
 		const host = el as HTMLElement;
 		host.style.touchAction = 'none';
+			host.style.background = def.bg ?? 'rgba(10,14,18,0.45)';
 		let currentAlpha = 18;
 		let currentBeta = 35;
 		let dragging = false;
