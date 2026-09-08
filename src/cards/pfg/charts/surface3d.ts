@@ -226,6 +226,7 @@ async function mountSurface3d(
 		})();
 		const unit = def.unit ?? '';
 		const chart = echarts.init(el);
+		console.log('[pfg surface3d] mounted');
 		chart.setOption({
 			backgroundColor: 'transparent',
 			tooltip: {
