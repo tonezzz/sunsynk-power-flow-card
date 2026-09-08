@@ -246,7 +246,6 @@ async function mountSurface3d(
 				min: 0,
 				max: days - 1,
 				interval: Math.max(1, Math.floor(days / 8)),
-				inverse: true,
 				axisLabel: {
 					color: '#9fb3c8',
 					formatter: (d: number) => dayLabels[d] ?? '',
