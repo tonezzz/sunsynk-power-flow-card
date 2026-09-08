@@ -242,28 +242,45 @@ async function mountSurface3d(
 		const sens = Array.isArray(s) ? s : [s, s];
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const chartAny = chart as any;
-		const getControl = () => chartAny?._components?.grid3D?.[0]?._control;
+		const getControl = () => {
+			const views = chartAny?._componentsViews ?? [];
+			for (let i = 0; i < views.length; i++) {
+				const c = views[i]?._control;
+				if (c?.setAlpha && c?.setBeta) return c;
+			}
+			return undefined;
+		};
+		let pending = false;
+		let targetAlpha = 18;
+		let targetBeta = 35;
 		const updateCamera = (alpha: number, beta: number) => {
-			currentAlpha = alpha;
-			currentBeta = beta;
-			const control = getControl();
-			if (control?.setAlpha && control?.setBeta) {
-				control.setAlpha(alpha);
-				control.setBeta(beta);
-			} else {
-				chartAny.setOption(
-					{
-						grid3D: {
-							viewControl: {
-								alpha,
-								beta,
+			targetAlpha = alpha;
+			targetBeta = beta;
+			if (pending) return;
+			pending = true;
+			requestAnimationFrame(() => {
+				pending = false;
+				currentAlpha = targetAlpha;
+				currentBeta = targetBeta;
+				const control = getControl();
+				if (control?.setAlpha && control?.setBeta) {
+					control.setAlpha(targetAlpha);
+					control.setBeta(targetBeta);
+				} else {
+					chartAny.setOption(
+						{
+							grid3D: {
+								viewControl: {
+									alpha: targetAlpha,
+									beta: targetBeta,
+								},
 							},
 						},
-					},
-					false,
-					false,
-				);
-			}
+						false,
+						false,
+					);
+				}
+			});
 		};
 		host.addEventListener('mousedown', (e: MouseEvent) => {
 			if (e.button !== 0) return;
