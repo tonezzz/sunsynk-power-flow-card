@@ -263,7 +263,7 @@ async function mountSurface3d(
 					data: flat,
 					dataShape: [days, 24],
 					shading: 'lambert',
-					silent: true,
+					silent: false,
 					itemStyle: { opacity: def.opacity ?? 1 },
 					wireframe: {
 						show: def.wireframe ?? true,
@@ -305,14 +305,7 @@ async function mountSurface3d(
 				? def.hover_plane > 0
 				: (def.hover_plane ?? true);
 		if (planeOn) {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			(chart as any).on('updateAxisPointer', (ev: any) => {
-				const zInfo = (ev?.axesInfo ?? []).find(
-					(a: { axisDim?: string }) => a.axisDim === 'z',
-				);
-				const v = zInfo?.value;
-				if (typeof v !== 'number' || isNaN(v)) return;
-				const vv = Math.max(valueMin, Math.min(valueMax, v));
+			const setPlane = (vv: number) =>
 				chart.setOption(
 					{
 						series: [
@@ -330,7 +323,19 @@ async function mountSurface3d(
 					false,
 					false,
 				);
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(chart as any).on('updateAxisPointer', (ev: any) => {
+				const zInfo = (ev?.axesInfo ?? []).find(
+					(a: { axisDim?: string }) => a.axisDim === 'z',
+				);
+				const v = zInfo?.value;
+				if (typeof v !== 'number' || isNaN(v)) return;
+				const vv = Math.max(valueMin, Math.min(valueMax, v));
+				setPlane(vv);
 			});
+			// park the plane on the floor when the pointer leaves the chart
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(chart as any).on('globalout', () => setPlane(valueMin));
 		}
 		new ResizeObserver(() => chart.resize()).observe(el as HTMLElement);
 		const host = el as HTMLElement;
