@@ -6,27 +6,42 @@ import { fetchHistorySeries } from '../history';
 
 // ---------- surface3d (echarts-gl via CDN, loaded on demand) ----------
 
-const ECHARTS_CDN =
-	'https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js';
-const ECHARTS_GL_CDN =
-	'https://cdn.jsdelivr.net/npm/echarts-gl@2.1.0/dist/echarts-gl.min.js';
+// Prefer the HA-local copies (vendored to /local/ on each host); fall back to CDN.
+const ECHARTS_SRCS = [
+	'/local/echarts-5.5.1.min.js',
+	'https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js',
+];
+const ECHARTS_GL_SRCS = [
+	'/local/echarts-gl-2.1.0.min.js',
+	'https://cdn.jsdelivr.net/npm/echarts-gl@2.1.0/dist/echarts-gl.min.js',
+];
 
 let echartsGlPromise: Promise<unknown> | null = null;
 function ensureEchartsGl(): Promise<unknown> {
 	const w = window as unknown as { echarts?: unknown };
 	if (w.echarts && echartsGlPromise) return echartsGlPromise;
 	if (!echartsGlPromise) {
-		const load = (src: string) =>
-			new Promise<void>((res, rej) => {
-				const s = document.createElement('script');
-				s.src = src;
-				s.onload = () => res();
-				s.onerror = () => rej(new Error(`script load failed: ${src}`));
-				document.head.appendChild(s);
-			});
+		const loadFirst = async (srcs: string[]) => {
+			let lastErr: unknown;
+			for (const src of srcs) {
+				try {
+					await new Promise<void>((res, rej) => {
+						const s = document.createElement('script');
+						s.src = src;
+						s.onload = () => res();
+						s.onerror = () => rej(new Error(`script load failed: ${src}`));
+						document.head.appendChild(s);
+					});
+					return;
+				} catch (e) {
+					lastErr = e;
+				}
+			}
+			throw lastErr;
+		};
 		echartsGlPromise = (async () => {
-			if (!w.echarts) await load(ECHARTS_CDN);
-			await load(ECHARTS_GL_CDN);
+			if (!w.echarts) await loadFirst(ECHARTS_SRCS);
+			await loadFirst(ECHARTS_GL_SRCS);
 			return w.echarts;
 		})();
 	}
