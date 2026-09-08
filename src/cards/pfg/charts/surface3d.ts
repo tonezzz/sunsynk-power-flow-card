@@ -278,10 +278,10 @@ async function mountSurface3d(
 					type: 'surface',
 					// flat quad spanning the whole box at z = hovered value
 					data: [
-						[0, 0, valueMin],
-						[23, 0, valueMin],
-						[0, days - 1, valueMin],
-						[23, days - 1, valueMin],
+						[0, 0, valueMid],
+						[23, 0, valueMid],
+						[0, days - 1, valueMid],
+						[23, days - 1, valueMid],
 					],
 					dataShape: [2, 2],
 					shading: 'lambert',
@@ -323,19 +323,29 @@ async function mountSurface3d(
 					false,
 					false,
 				);
+			const clampV = (v: unknown) =>
+				typeof v === 'number' && !isNaN(v)
+					? Math.max(valueMin, Math.min(valueMax, v))
+					: undefined;
+			// primary: hovering the surface reports the point's [hour, day, value]
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(chart as any).on('mousemove', (ev: any) => {
+				if (ev?.seriesId === 'pfg3d-hover-plane') return;
+				const vv = clampV(ev?.value?.[2] ?? ev?.data?.[2]);
+				if (vv !== undefined) setPlane(vv);
+			});
+			// secondary: axis pointer value (cartesian3D axesInfo)
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			(chart as any).on('updateAxisPointer', (ev: any) => {
 				const zInfo = (ev?.axesInfo ?? []).find(
 					(a: { axisDim?: string }) => a.axisDim === 'z',
 				);
-				const v = zInfo?.value;
-				if (typeof v !== 'number' || isNaN(v)) return;
-				const vv = Math.max(valueMin, Math.min(valueMax, v));
-				setPlane(vv);
+				const vv = clampV(zInfo?.value);
+				if (vv !== undefined) setPlane(vv);
 			});
-			// park the plane on the floor when the pointer leaves the chart
+			// when the pointer leaves, return to mid height (still visible)
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			(chart as any).on('globalout', () => setPlane(valueMin));
+			(chart as any).on('globalout', () => setPlane(valueMid));
 		}
 		new ResizeObserver(() => chart.resize()).observe(el as HTMLElement);
 		const host = el as HTMLElement;
