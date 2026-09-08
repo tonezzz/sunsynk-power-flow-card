@@ -300,6 +300,7 @@ async function mountSurface3d(
 				},
 			],
 		});
+		let planePinned = false; // click toggles pin on the hover plane
 		const planeOn =
 			typeof def.hover_plane === 'number'
 				? def.hover_plane > 0
@@ -327,10 +328,12 @@ async function mountSurface3d(
 				typeof v === 'number' && !isNaN(v)
 					? Math.max(valueMin, Math.min(valueMax, v))
 					: undefined;
+			// click toggles pin: plane stays until the next click
+			planePinned = false;
 			// primary: hovering the surface reports the point's [hour, day, value]
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			(chart as any).on('mousemove', (ev: any) => {
-				if (ev?.seriesId === 'pfg3d-hover-plane') return;
+				if (planePinned || ev?.seriesId === 'pfg3d-hover-plane') return;
 				const vv = clampV(ev?.value?.[2] ?? ev?.data?.[2]);
 				if (vv !== undefined) setPlane(vv);
 			});
@@ -345,15 +348,18 @@ async function mountSurface3d(
 				const yi = infos.find(
 					(a: { axisDim?: string }) => a.axisDim === 'y',
 				);
+				if (planePinned) return;
 				if (xi?.value == null || yi?.value == null) return;
 				const h = Math.max(0, Math.min(23, Math.round(xi.value)));
 				const d = Math.max(0, Math.min(days - 1, Math.round(yi.value)));
 				const vv = clampV(grid[d]?.[h]);
 				if (vv !== undefined) setPlane(vv);
 			});
-			// when the pointer leaves, return to mid height (still visible)
+			// when the pointer leaves, return to mid height (unless pinned)
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			(chart as any).on('globalout', () => setPlane(valueMid));
+			(chart as any).on('globalout', () => {
+				if (!planePinned) setPlane(valueMid);
+			});
 		}
 		new ResizeObserver(() => chart.resize()).observe(el as HTMLElement);
 		const host = el as HTMLElement;
@@ -437,6 +443,11 @@ async function mountSurface3d(
 		};
 		window.addEventListener('mousemove', onMove);
 		window.addEventListener('mouseup', onUp);
+		// plain click (no drag) toggles the hover-plane pin
+		host.addEventListener('click', (e: MouseEvent) => {
+			if (Math.hypot(e.clientX - startX, e.clientY - startY) > 6) return;
+			planePinned = !planePinned;
+		});
 	} catch (e) {
 		console.error('[pfg surface3d]', e);
 		(el as HTMLElement).innerHTML =
