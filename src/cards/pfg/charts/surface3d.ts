@@ -330,12 +330,16 @@ async function mountSurface3d(
 					: undefined;
 			// click toggles pin: plane stays until the next click
 			planePinned = false;
+			let lastDataMove = 0; // data-hover suppresses the pixel-projection path
 			// primary: hovering the surface reports the point's [hour, day, value]
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			(chart as any).on('mousemove', (ev: any) => {
 				if (planePinned || ev?.seriesId === 'pfg3d-hover-plane') return;
 				const vv = clampV(ev?.value?.[2] ?? ev?.data?.[2]);
-				if (vv !== undefined) setPlane(vv);
+				if (vv !== undefined) {
+					lastDataMove = Date.now();
+					setPlane(vv);
+				}
 			});
 			// secondary: axis pointer reports x (hour) + y (day) on the box
 			// walls — look up the surface's own grid value at that cell.
@@ -353,6 +357,23 @@ async function mountSurface3d(
 				const h = Math.max(0, Math.min(23, Math.round(xi.value)));
 				const d = Math.max(0, Math.min(days - 1, Math.round(yi.value)));
 				const vv = clampV(grid[d]?.[h]);
+				if (vv !== undefined) setPlane(vv);
+			});
+			// tertiary: pointer anywhere on the canvas (e.g. over the box walls)
+			// — project the z-axis min/max to screen pixels and map the
+			// pointer's vertical position back to a kW level.
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const ch: any = chart;
+			const zr = ch.getZr?.();
+			zr?.on('mousemove', (e: { offsetX: number; offsetY: number }) => {
+				if (planePinned || Date.now() - lastDataMove < 100) return;
+				const zMinPx = ch.convertToPixel?.('grid3D', [0, 0, valueMin]);
+				const zMaxPx = ch.convertToPixel?.('grid3D', [0, 0, valueMax]);
+				if (!Array.isArray(zMinPx) || !Array.isArray(zMaxPx)) return;
+				const dy = zMinPx[1] - zMaxPx[1];
+				if (!dy) return;
+				const v = valueMin + ((zMinPx[1] - e.offsetY) / dy) * (valueMax - valueMin);
+				const vv = clampV(v);
 				if (vv !== undefined) setPlane(vv);
 			});
 			// when the pointer leaves, return to mid height (unless pinned)
