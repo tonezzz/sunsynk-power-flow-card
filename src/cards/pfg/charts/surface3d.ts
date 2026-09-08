@@ -173,9 +173,6 @@ async function mountSurface3d(
 				max: days - 1,
 				interval: 1,
 				axisLabel: {
-					show: true,
-					interval: 0,
-					fontSize: 10,
 					color: '#9fb3c8',
 					formatter: (d: number) => dayLabels[d] ?? '',
 				},
