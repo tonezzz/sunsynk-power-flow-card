@@ -152,6 +152,8 @@ export interface PfgSurface3dChartDef extends PfgBaseChartDef {
 	opacity?: number;
 	alpha?: number; // camera pitch (viewControl.alpha), default 18
 	beta?: number; // camera yaw (viewControl.beta), default 215 (far side facing viewer)
+	hover_plane?: boolean | number; // translucent horizontal plane at hovered value; number = opacity 0-1 (default 0.25)
+	hover_plane_color?: string; // default '#4fc3f7'
 }
 
 export type PfgChartDef =

@@ -199,6 +199,8 @@ async function mountSurface3d(
 			tooltip: {
 				formatter: (p: { value: number[] }) =>
 					`${dayLabels[p.value[1]] ?? ''} ${String(p.value[0]).padStart(2, '0')}:00 — ${p.value[2]}${unit ? ' ' + unit : ''}`,
+				// dim the axisPointer crosshair lines; the hover plane carries the cue
+				axisPointer: { lineStyle: { opacity: 0.12 } },
 			},
 			xAxis3D: {
 				type: 'value',
@@ -271,8 +273,65 @@ async function mountSurface3d(
 						},
 					},
 				},
+				{
+					id: 'pfg3d-hover-plane',
+					type: 'surface',
+					// flat quad spanning the whole box at z = hovered value
+					data: [
+						[0, 0, valueMin],
+						[23, 0, valueMin],
+						[0, days - 1, valueMin],
+						[23, days - 1, valueMin],
+					],
+					dataShape: [2, 2],
+					shading: 'lambert',
+					silent: true,
+					animation: false,
+					itemStyle: {
+						opacity:
+							typeof def.hover_plane === 'number'
+								? def.hover_plane
+								: def.hover_plane === false
+									? 0
+									: 0.25,
+						color: def.hover_plane_color ?? '#4fc3f7',
+					},
+					wireframe: { show: false },
+				},
 			],
 		});
+		const planeOn =
+			typeof def.hover_plane === 'number'
+				? def.hover_plane > 0
+				: (def.hover_plane ?? true);
+		if (planeOn) {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(chart as any).on('updateAxisPointer', (ev: any) => {
+				const zInfo = (ev?.axesInfo ?? []).find(
+					(a: { axisDim?: string }) => a.axisDim === 'z',
+				);
+				const v = zInfo?.value;
+				if (typeof v !== 'number' || isNaN(v)) return;
+				const vv = Math.max(valueMin, Math.min(valueMax, v));
+				chart.setOption(
+					{
+						series: [
+							{
+								id: 'pfg3d-hover-plane',
+								data: [
+									[0, 0, vv],
+									[23, 0, vv],
+									[0, days - 1, vv],
+									[23, days - 1, vv],
+								],
+							},
+						],
+					},
+					false,
+					false,
+				);
+			});
+		}
 		new ResizeObserver(() => chart.resize()).observe(el as HTMLElement);
 		const host = el as HTMLElement;
 		host.style.touchAction = 'none';
