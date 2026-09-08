@@ -149,6 +149,7 @@ export interface PfgSurface3dChartDef extends PfgBaseChartDef {
 	center?: [number, number, number];
 	rotate_center?: 'front' | 'volume' | [number, number, number];
 	cache?: number;
+	opacity?: number;
 }
 
 export type PfgChartDef =
