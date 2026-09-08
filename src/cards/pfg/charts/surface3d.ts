@@ -215,6 +215,7 @@ async function mountSurface3d(
 					data: flat,
 					dataShape: [days, 24],
 					shading: 'lambert',
+					silent: true,
 					wireframe: {
 						show: def.wireframe ?? true,
 						lineStyle: {
