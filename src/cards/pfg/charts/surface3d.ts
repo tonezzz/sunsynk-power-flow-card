@@ -454,15 +454,17 @@ async function mountSurface3d(
 				}
 			});
 		};
-		host.addEventListener('mousedown', (e: MouseEvent) => {
-			if (e.button !== 0) return;
+		const onDown = (e: MouseEvent) => {
+			if (e.button !== 0 || !host.contains(e.target as Node)) return;
 			dragging = true;
 			startX = e.clientX;
 			startY = e.clientY;
 			alphaStart = currentAlpha;
 			betaStart = currentBeta;
 			e.preventDefault();
-		});
+			e.stopImmediatePropagation();
+		};
+		window.addEventListener('mousedown', onDown, true);
 		const onMove = (e: MouseEvent) => {
 			if (!dragging) return;
 			const dx = e.clientX - startX;
