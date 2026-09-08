@@ -338,33 +338,29 @@ async function mountSurface3d(
 				pending = false;
 				currentAlpha = targetAlpha;
 				currentBeta = targetBeta;
-				const control = getControl();
-				if (control?.setAlpha && control?.setBeta) {
-					control.setAlpha(targetAlpha);
-					control.setBeta(targetBeta);
-				} else {
-					chartAny.setOption(
-						{
-							grid3D: {
-								viewControl: {
-									alpha: targetAlpha,
-									beta: targetBeta,
-								},
+				console.log('[pfg surface3d] updateCamera', targetAlpha, targetBeta);
+				chartAny.setOption(
+					{
+						grid3D: {
+							viewControl: {
+								alpha: targetAlpha,
+								beta: targetBeta,
 							},
 						},
-						false,
-						false,
-					);
-				}
+					},
+					false,
+					false,
+				);
 			});
 		};
-		const onDown = (e: MouseEvent) => {
+		const onDown = (e: PointerEvent) => {
 			if (e.button !== 0 || !host.contains(e.target as Node)) return;
 			dragging = true;
 			startX = e.clientX;
 			startY = e.clientY;
 			alphaStart = currentAlpha;
 			betaStart = currentBeta;
+			console.log('[pfg surface3d] pointerdown', e.button, e.pointerType);
 			e.preventDefault();
 			e.stopImmediatePropagation();
 		};
@@ -378,6 +374,7 @@ async function mountSurface3d(
 				-90,
 				Math.min(90, alphaStart - (dy * sens[1]) / 20),
 			);
+			console.log('[pfg surface3d] pointermove', dx, dy, alpha, beta);
 			updateCamera(alpha, beta);
 		};
 		const onUp = () => {
