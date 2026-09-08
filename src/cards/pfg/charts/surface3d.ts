@@ -468,7 +468,7 @@ async function mountSurface3d(
 			});
 		};
 		const onDown = (e: PointerEvent) => {
-			if (e.button !== 0 || !host.contains(e.target as Node)) return;
+			if (e.button !== 0) return;
 			dragging = true;
 			startX = e.clientX;
 			startY = e.clientY;
@@ -477,7 +477,9 @@ async function mountSurface3d(
 			e.preventDefault();
 			e.stopImmediatePropagation();
 		};
-		window.addEventListener('pointerdown', onDown, true);
+		// bind on host (not window) so sibling overlays outside the chart
+		// can't shadow the hit-test; events on the canvas bubble up here
+		host.addEventListener('pointerdown', onDown);
 		const onMove = (e: PointerEvent) => {
 			if (!dragging) return;
 			const dx = e.clientX - startX;
