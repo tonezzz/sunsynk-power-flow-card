@@ -338,19 +338,26 @@ async function mountSurface3d(
 				pending = false;
 				currentAlpha = targetAlpha;
 				currentBeta = targetBeta;
-				console.log('[pfg surface3d] updateCamera', targetAlpha, targetBeta);
-				chartAny.setOption(
-					{
-						grid3D: {
-							viewControl: {
-								alpha: targetAlpha,
-								beta: targetBeta,
+				// echarts-gl OrbitControl does NOT pick up viewControl changes
+				// via setOption — drive the control instance directly.
+				const ctrl = getControl();
+				if (ctrl) {
+					ctrl.setAlpha(targetAlpha);
+					ctrl.setBeta(targetBeta);
+				} else {
+					chartAny.setOption(
+						{
+							grid3D: {
+								viewControl: {
+									alpha: targetAlpha,
+									beta: targetBeta,
+								},
 							},
 						},
-					},
-					false,
-					false,
-				);
+						false,
+						false,
+					);
+				}
 			});
 		};
 		const onDown = (e: PointerEvent) => {
@@ -360,7 +367,6 @@ async function mountSurface3d(
 			startY = e.clientY;
 			alphaStart = currentAlpha;
 			betaStart = currentBeta;
-			console.log('[pfg surface3d] pointerdown', e.button, e.pointerType);
 			e.preventDefault();
 			e.stopImmediatePropagation();
 		};
@@ -374,7 +380,6 @@ async function mountSurface3d(
 				-90,
 				Math.min(90, alphaStart - (dy * sens[1]) / 20),
 			);
-			console.log('[pfg surface3d] pointermove', dx, dy, alpha, beta);
 			updateCamera(alpha, beta);
 		};
 		const onUp = () => {
