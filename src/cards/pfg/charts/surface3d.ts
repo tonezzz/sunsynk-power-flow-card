@@ -133,7 +133,7 @@ async function mountSurface3d(
 		const zMid = (0 + (days - 1)) / 2;
 		const boxWidth = 160;
 		const boxHeight = 60;
-		const boxDepth = Math.max(200, Math.min(800, days * 12));
+		const boxDepth = 120;
 		const frontCenter: [number, number, number] = [
 			boxWidth * (11.5 / 23 - 0.5),
 			boxHeight * ((valueMid - valueMin) / (valueMax - valueMin) - 0.5),
@@ -149,7 +149,6 @@ async function mountSurface3d(
 			if (Array.isArray(def.rotate_center)) return def.rotate_center;
 			return def.rotate_center === 'front' ? frontCenter : volumeCenter;
 		})();
-		const cameraDistance = boxDepth / 2 + 180;
 		const unit = def.unit ?? '';
 		const chart = echarts.init(el);
 		chart.setOption({
@@ -171,7 +170,7 @@ async function mountSurface3d(
 				name: 'Day',
 				min: 0,
 				max: days - 1,
-				interval: 1,
+				interval: Math.max(1, Math.floor(days / 8)),
 				axisLabel: {
 					color: '#9fb3c8',
 					formatter: (d: number) => dayLabels[d] ?? '',
@@ -197,7 +196,6 @@ async function mountSurface3d(
 					alpha: 18,
 					beta: 35,
 					center: center,
-					distance: cameraDistance,
 					// left drag is handled by our own event loop so it works over
 					// the rendered surface; middle/right still use OrbitControl
 					rotateMouseButton: def.rotate_mouse_button ?? 'middle',
