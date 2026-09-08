@@ -383,8 +383,9 @@ async function mountSurface3d(
 		const onUp = () => {
 			dragging = false;
 		};
-		window.addEventListener('pointermove', onMove);
-		window.addEventListener('pointerup', onUp);
+		window.addEventListener('pointermove', onMove, true);
+		window.addEventListener('pointerup', onUp, true);
+		window.addEventListener('pointercancel', onUp, true);
 	} catch (e) {
 		console.error('[pfg surface3d]', e);
 		(el as HTMLElement).innerHTML =
