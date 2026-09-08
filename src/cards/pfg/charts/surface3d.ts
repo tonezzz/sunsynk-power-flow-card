@@ -337,8 +337,8 @@ async function mountSurface3d(
 			e.preventDefault();
 			e.stopImmediatePropagation();
 		};
-		window.addEventListener('mousedown', onDown, true);
-		const onMove = (e: MouseEvent) => {
+		window.addEventListener('pointerdown', onDown, true);
+		const onMove = (e: PointerEvent) => {
 			if (!dragging) return;
 			const dx = e.clientX - startX;
 			const dy = e.clientY - startY;
@@ -352,8 +352,8 @@ async function mountSurface3d(
 		const onUp = () => {
 			dragging = false;
 		};
-		window.addEventListener('mousemove', onMove);
-		window.addEventListener('mouseup', onUp);
+		window.addEventListener('pointermove', onMove);
+		window.addEventListener('pointerup', onUp);
 	} catch (e) {
 		console.error('[pfg surface3d]', e);
 		(el as HTMLElement).innerHTML =
