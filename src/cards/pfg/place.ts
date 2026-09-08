@@ -2,7 +2,8 @@ import { PfgChartDef } from '../../types';
 
 /**
  * Single placement engine for chart overlays inside a tile.
- * position: bottom | top | bg | cycle | center (default)
+ * position: bottom | top | fill | cycle | center (default)
+ * `bg` is a deprecated alias of `fill`.
  */
 export function chartOverlayStyle(def: PfgChartDef): string {
 	const pos = def.position || 'center';
@@ -12,7 +13,8 @@ export function chartOverlayStyle(def: PfgChartDef): string {
 			return `position:absolute;bottom:2%;left:2.5%;width:95%;height:${def.height ?? '35%'};`;
 		case 'top':
 			return 'position:absolute;top:6%;left:2.5%;width:95%;height:56%;';
-		case 'bg':
+		case 'fill':
+		case 'bg': // deprecated alias of fill
 			return `position:absolute;bottom:0;left:0;width:100%;height:${def.height ?? '50%'};pointer-events:none;${opacity}${def.scrim ? 'background:linear-gradient(to top,rgba(0,0,0,0.45),rgba(0,0,0,0.15) 60%,transparent);' : ''}`;
 		case 'cycle':
 			return `position:absolute;inset:0;width:100%;height:100%;pointer-events:none;${opacity}`;

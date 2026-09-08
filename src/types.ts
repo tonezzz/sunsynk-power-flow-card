@@ -228,6 +228,17 @@ export interface sunsynkPowerFlowCardConfig extends LovelaceCardConfig {
 	pfg_grid_rows?: number;
 	pfg_transparent?: boolean;
 	pfg_fit_screen?: boolean | string; // cap grid width so it fits viewport height (no scroll); string = reserved px for header/margins
+	pfg_debug_layers?: boolean; // outline each render layer with a colored tag (cell/img/chart/label)
+	pfg_tile_style?: Record<
+		string,
+		{
+			bg?: string;
+			border?: string;
+			radius?: string;
+			image?: string;
+			image_fit?: 'contain' | 'cover' | 'fill';
+		}
+	>; // consolidated per-tile style; overrides pfg_images/pfg_border/pfg_radius/cell tint
 	pfg_image_fit?: Record<string, 'contain' | 'cover' | 'fill'>;
 	pfg_status?: Record<
 		string,

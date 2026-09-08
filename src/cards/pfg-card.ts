@@ -28,6 +28,16 @@ export const pfgCard = (
 	// Tile image map: key = "r,c" (1-indexed). Additional tiles can be added here
 	// or supplied from the card config via `pfg_images`.
 	const tileImages: Record<string, string> = { ...(config.pfg_images || {}) };
+
+	// `pfg_debug_layers` outlines each render layer and tags it (cell/img/chart/label)
+	const debugLayers = !!config.pfg_debug_layers;
+	const dbgTag = (name: string, color: string) =>
+		debugLayers
+			? html`<span
+					style="position:absolute;top:0;left:0;z-index:9;font-size:8px;line-height:1.4;background:${color};color:#fff;padding:1px 3px;pointer-events:none;opacity:0.85;"
+					>${name}</span
+				>`
+			: '';
 	const center = Math.floor(gridSize / 2) + 1;
 	const centerKey = `${center},${center}`;
 	const inverterTiles = new Set<string>();
@@ -247,12 +257,14 @@ export const pfgCard = (
 							const key = `${c.row},${c.col}`;
 							if (covered.has(key)) return null;
 							const span = spans[key];
-							const radius = config.pfg_radius?.[key];
-							const tileBorder = config.pfg_border?.[key];
-							const imgSrc = tileImages[key];
+							const ts = config.pfg_tile_style?.[key];
+							const radius = ts?.radius ?? config.pfg_radius?.[key];
+							const tileBorder = ts?.border ?? config.pfg_border?.[key];
+							const imgSrc = ts?.image ?? tileImages[key];
 							const imgFit =
-								config.pfg_image_fit?.[key] ||
-								(inverterTiles.has(key) ? 'contain' : 'cover');
+								ts?.image_fit ??
+								(config.pfg_image_fit?.[key] ||
+									(inverterTiles.has(key) ? 'contain' : 'cover'));
 							const imgZoom = inverterTiles.has(key) ? 1 : imageZoom;
 							const label = tileLabels[key];
 							const icon = tileIcons[key];
@@ -311,21 +323,42 @@ export const pfgCard = (
 								.filter((i) => i.tpl != null);
 							const chartOverlays = chartItems.map(
 								(i) =>
-									html`<div style="${chartOverlayStyle(i.def)}">${i.tpl}</div>`,
+									html`<div style="${chartOverlayStyle(i.def)}">
+										${dbgTag(`chart:${i.def.position || 'center'}`, '#00acc1')}${i.tpl}
+									</div>`,
+							);
+							// A tile that carries a fill/bg chart or an image paints its own
+							// background — skip the implicit grid tint/border in that case.
+							const fillChart = charts.some(
+								(d) => d.position === 'fill' || d.position === 'bg',
 							);
 							const title = `Tile ${key}${status ? ' – ' + status : ''}${entityState ? ' (' + entityState + ')' : ''}`;
-							const cellStyle = `border:${hideGrid ? 'none' : tileBorder || `1px solid ${color || 'rgba(255,255,255,0.2)'}`};background:${color ? hexToRgba(color, 0.2) : hideGrid ? 'transparent' : 'rgba(255,255,255,0.05)'};display:flex;align-items:center;justify-content:center;font-size:min(1.5vw,10px);text-align:center;box-sizing:border-box;overflow:hidden;position:relative;${radius ? `border-radius:${radius};` : ''}${span && (span.rows > 1 || span.cols > 1) ? `grid-row:${c.row}/span ${span.rows};grid-column:${c.col}/span ${span.cols};` : ''}`;
+							const cellBg =
+								ts?.bg ??
+								(imgSrc || fillChart
+									? 'transparent'
+									: color
+										? hexToRgba(color, 0.2)
+										: hideGrid
+											? 'transparent'
+											: 'rgba(255,255,255,0.05)');
+							const cellBorder =
+								tileBorder ??
+								(hideGrid || imgSrc || fillChart
+									? 'none'
+									: `1px solid ${color || 'rgba(255,255,255,0.2)'}`);
+							const cellStyle = `border:${cellBorder};background:${cellBg};display:flex;align-items:center;justify-content:center;font-size:min(1.5vw,10px);text-align:center;box-sizing:border-box;overflow:hidden;position:relative;${radius ? `border-radius:${radius};` : ''}${span && (span.rows > 1 || span.cols > 1) ? `grid-row:${c.row}/span ${span.rows};grid-column:${c.col}/span ${span.cols};` : ''}${debugLayers ? 'outline:2px dashed rgba(255,60,60,0.7);outline-offset:-2px;' : ''}`;
 							const labelOverlay = label
 								? html`<span
 										title="${title}"
-										style="position:absolute;left:50%;${config.pfg_label_pos?.[key] === 'top' ? 'top:3%;transform:translate(-50%,0)' : `top:${config.pfg_label_pos?.[key] || '55%'};transform:translate(-50%,-50%) translateY(-26px)`};z-index:2;font-weight:bold;font-size:min(2vw,14px);color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;"
+										style="position:absolute;left:50%;${config.pfg_label_pos?.[key] === 'top' ? 'top:3%;transform:translate(-50%,0)' : `top:${config.pfg_label_pos?.[key] || '55%'};transform:translate(-50%,-50%) translateY(-26px)`};z-index:2;${debugLayers ? 'outline:1px solid #ffd54f;' : ''}font-weight:bold;font-size:min(2vw,14px);color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;"
 										>${label}</span
 									>`
 								: '';
 							const valueLabel = config.pfg_value_labels?.[key];
 							const valueLabelOverlay = valueLabel
 								? html`<span
-										style="position:absolute;left:50%;top:${config.pfg_value_label_pos?.[key] || 'calc(55% - 14px)'};transform:translate(-50%,-50%);z-index:2;font-weight:bold;font-size:min(1.6vw,11px);color:#ddd;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;"
+										style="position:absolute;left:50%;top:${config.pfg_value_label_pos?.[key] || 'calc(55% - 14px)'};transform:translate(-50%,-50%);z-index:2;${debugLayers ? 'outline:1px solid #ffd54f;' : ''}font-weight:bold;font-size:min(1.6vw,11px);color:#ddd;text-shadow:0 1px 3px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;"
 										>${valueLabel}</span
 									>`
 								: '';
@@ -338,7 +371,7 @@ export const pfgCard = (
 									style="${cellStyle}"
 									title="${title}"
 								>
-									${labelOverlay} ${valueLabelOverlay}
+									${dbgTag('cell', '#c62828')}${labelOverlay} ${valueLabelOverlay}
 									${
 										icon
 											? html`<ha-icon
@@ -348,8 +381,9 @@ export const pfgCard = (
 												></ha-icon>`
 											: imgSrc && chartOverlays.length
 												? html`<div
-														style="position:absolute;inset:0;z-index:0;"
+														style="position:absolute;inset:0;z-index:0;${debugLayers ? 'outline:1px dashed #2e7d32;outline-offset:-2px;' : ''}"
 													>
+														${dbgTag('img', '#2e7d32')}
 														<img
 															src="${imgSrc}"
 															alt="Tile ${key}"
