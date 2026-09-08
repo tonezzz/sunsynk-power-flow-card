@@ -6,49 +6,39 @@ import { fetchHistorySeries } from '../history';
 
 // ---------- surface3d (echarts-gl via CDN, loaded on demand) ----------
 
-// Prefer the HA-local copies (vendored to /local/ on each host); fall back to CDN.
-const ECHARTS_SRCS = [
-	'/local/echarts-5.5.1.min.js',
-	'https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js',
-];
-const ECHARTS_GL_SRCS = [
-	'/local/echarts-gl-2.1.0.min.js',
-	'https://cdn.jsdelivr.net/npm/echarts-gl@2.1.0/dist/echarts-gl.min.js',
-];
+const ECHARTS_CDN =
+	'https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js';
+const ECHARTS_GL_CDN =
+	'https://cdn.jsdelivr.net/npm/echarts-gl@2.1.0/dist/echarts-gl.min.js';
 
 let echartsGlPromise: Promise<unknown> | null = null;
 function ensureEchartsGl(): Promise<unknown> {
 	const w = window as unknown as { echarts?: unknown };
 	if (w.echarts && echartsGlPromise) return echartsGlPromise;
 	if (!echartsGlPromise) {
-		const loadFirst = async (srcs: string[]) => {
-			let lastErr: unknown;
-			for (const src of srcs) {
-				try {
-					await new Promise<void>((res, rej) => {
-						const s = document.createElement('script');
-						s.src = src;
-						s.onload = () => res();
-						s.onerror = () => rej(new Error(`script load failed: ${src}`));
-						document.head.appendChild(s);
-					});
-					return;
-				} catch (e) {
-					lastErr = e;
-				}
-			}
-			throw lastErr;
-		};
+		const load = (src: string) =>
+			new Promise<void>((res, rej) => {
+				const s = document.createElement('script');
+				s.src = src;
+				s.onload = () => res();
+				s.onerror = () => rej(new Error(`script load failed: ${src}`));
+				document.head.appendChild(s);
+			});
 		echartsGlPromise = (async () => {
-			if (!w.echarts) await loadFirst(ECHARTS_SRCS);
-			await loadFirst(ECHARTS_GL_SRCS);
+			if (!w.echarts) await load(ECHARTS_CDN);
+			await load(ECHARTS_GL_CDN);
 			return w.echarts;
 		})();
 	}
 	return echartsGlPromise;
 }
 
-function surface3dCacheKey(entity: string, days: number, scale: number, end: Date): string {
+function surface3dCacheKey(
+	entity: string,
+	days: number,
+	scale: number,
+	end: Date,
+): string {
 	return `pfg3d:${entity}:${days}:${scale}:${end.toISOString().slice(0, 13)}`;
 }
 
@@ -71,7 +61,10 @@ function readCache(key: string, ttlMs: number): Surface3dCache | null {
 
 function writeCache(key: string, grid: number[][], dayLabels: string[]) {
 	try {
-		localStorage.setItem(key, JSON.stringify({ grid, dayLabels, ts: Date.now() }));
+		localStorage.setItem(
+			key,
+			JSON.stringify({ grid, dayLabels, ts: Date.now() }),
+		);
 	} catch {
 		/* ignore quota errors */
 	}
@@ -164,7 +157,13 @@ async function mountSurface3d(
 		const days = Math.max(2, Math.min(def.days ?? 30, 90));
 		const cacheMinutes = def.cache ?? 5;
 		const { grid, dayLabels } = entity
-			? await fetchHourlyDayGrid(hass, entity, days, def.scale ?? 1, cacheMinutes)
+			? await fetchHourlyDayGrid(
+					hass,
+					entity,
+					days,
+					def.scale ?? 1,
+					cacheMinutes,
+				)
 			: { grid: [], dayLabels: [] };
 		const echarts = (
 			window as unknown as {
@@ -214,8 +213,6 @@ async function mountSurface3d(
 			tooltip: {
 				formatter: (p: { value: number[] }) =>
 					`${dayLabels[p.value[1]] ?? ''} ${String(p.value[0]).padStart(2, '0')}:00 — ${p.value[2]}${unit ? ' ' + unit : ''}`,
-				// dim the axisPointer crosshair lines; the hover plane carries the cue
-				axisPointer: { lineStyle: { opacity: 0.12 } },
 			},
 			xAxis3D: {
 				type: 'value',
@@ -254,8 +251,8 @@ async function mountSurface3d(
 				},
 				viewControl: {
 					autoRotate: def.auto_rotate ?? false,
-					alpha: def.alpha ?? 18,
-					beta: def.beta ?? 215,
+					alpha: 18,
+					beta: 35,
 					center: center,
 					// left drag is handled by our own event loop so it works over
 					// the rendered surface; middle/right still use OrbitControl
@@ -278,7 +275,7 @@ async function mountSurface3d(
 					data: flat,
 					dataShape: [days, 24],
 					shading: 'lambert',
-					silent: false,
+					silent: true,
 					itemStyle: { opacity: def.opacity ?? 1 },
 					wireframe: {
 						show: def.wireframe ?? true,
@@ -288,128 +285,18 @@ async function mountSurface3d(
 						},
 					},
 				},
-				{
-					id: 'pfg3d-hover-plane',
-					type: 'surface',
-					// flat quad spanning the whole box at z = hovered value
-					data: [
-						[0, 0, valueMid],
-						[23, 0, valueMid],
-						[0, days - 1, valueMid],
-						[23, days - 1, valueMid],
-					],
-					dataShape: [2, 2],
-					shading: 'lambert',
-					silent: true,
-					animation: false,
-					itemStyle: {
-						opacity:
-							typeof def.hover_plane === 'number'
-								? def.hover_plane
-								: def.hover_plane === false
-									? 0
-									: 0.25,
-						color: def.hover_plane_color ?? '#4fc3f7',
-					},
-					wireframe: { show: false },
-				},
 			],
 		});
-		let planePinned = false; // click toggles pin on the hover plane
-		const planeOn =
-			typeof def.hover_plane === 'number'
-				? def.hover_plane > 0
-				: (def.hover_plane ?? true);
-		if (planeOn) {
-			const setPlane = (vv: number) =>
-				chart.setOption(
-					{
-						series: [
-							{
-								id: 'pfg3d-hover-plane',
-								data: [
-									[0, 0, vv],
-									[23, 0, vv],
-									[0, days - 1, vv],
-									[23, days - 1, vv],
-								],
-							},
-						],
-					},
-					false,
-					false,
-				);
-			const clampV = (v: unknown) =>
-				typeof v === 'number' && !isNaN(v)
-					? Math.max(valueMin, Math.min(valueMax, v))
-					: undefined;
-			// click toggles pin: plane stays until the next click
-			planePinned = false;
-			let lastDataMove = 0; // data-hover suppresses the pixel-projection path
-			// primary: hovering the surface reports the point's [hour, day, value]
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			(chart as any).on('mousemove', (ev: any) => {
-				if (planePinned || ev?.seriesId === 'pfg3d-hover-plane') return;
-				const vv = clampV(ev?.value?.[2] ?? ev?.data?.[2]);
-				if (vv !== undefined) {
-					lastDataMove = Date.now();
-					setPlane(vv);
-				}
-			});
-			// secondary: axis pointer reports x (hour) + y (day) on the box
-			// walls — look up the surface's own grid value at that cell.
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			(chart as any).on('updateAxisPointer', (ev: any) => {
-				const infos = ev?.axesInfo ?? [];
-				const xi = infos.find(
-					(a: { axisDim?: string }) => a.axisDim === 'x',
-				);
-				const yi = infos.find(
-					(a: { axisDim?: string }) => a.axisDim === 'y',
-				);
-				if (planePinned) return;
-				if (xi?.value == null || yi?.value == null) return;
-				const h = Math.max(0, Math.min(23, Math.round(xi.value)));
-				const d = Math.max(0, Math.min(days - 1, Math.round(yi.value)));
-				const vv = clampV(grid[d]?.[h]);
-				if (vv !== undefined) setPlane(vv);
-			});
-			// tertiary: pointer anywhere on the canvas (e.g. over the box walls)
-			// — project the z-axis min/max to screen pixels and map the
-			// pointer's vertical position back to a kW level.
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const ch: any = chart;
-			const zr = ch.getZr?.();
-			zr?.on('mousemove', (e: { offsetX: number; offsetY: number }) => {
-				if (planePinned || Date.now() - lastDataMove < 100) return;
-				const zMinPx = ch.convertToPixel?.('grid3D', [0, 0, valueMin]);
-				const zMaxPx = ch.convertToPixel?.('grid3D', [0, 0, valueMax]);
-				if (!Array.isArray(zMinPx) || !Array.isArray(zMaxPx)) return;
-				const dy = zMinPx[1] - zMaxPx[1];
-				if (!dy) return;
-				const v = valueMin + ((zMinPx[1] - e.offsetY) / dy) * (valueMax - valueMin);
-				const vv = clampV(v);
-				if (vv !== undefined) setPlane(vv);
-			});
-			// when the pointer leaves, return to mid height (unless pinned)
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			(chart as any).on('globalout', () => {
-				if (!planePinned) setPlane(valueMid);
-			});
-		}
 		new ResizeObserver(() => chart.resize()).observe(el as HTMLElement);
 		const host = el as HTMLElement;
 		host.style.touchAction = 'none';
-			host.style.background = def.bg ?? 'rgba(10,14,18,0.45)';
-		const initAlpha = def.alpha ?? 18;
-		const initBeta = def.beta ?? 215;
-		let currentAlpha = initAlpha;
-		let currentBeta = initBeta;
+		let currentAlpha = 18;
+		let currentBeta = 35;
 		let dragging = false;
 		let startX = 0;
 		let startY = 0;
-		let alphaStart = initAlpha;
-		let betaStart = initBeta;
+		let alphaStart = 18;
+		let betaStart = 35;
 		const s = def.rotate_sensitivity ?? 3;
 		const sens = Array.isArray(s) ? s : [s, s];
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -423,8 +310,8 @@ async function mountSurface3d(
 			return undefined;
 		};
 		let pending = false;
-		let targetAlpha = initAlpha;
-		let targetBeta = initBeta;
+		let targetAlpha = 18;
+		let targetBeta = 35;
 		const updateCamera = (alpha: number, beta: number) => {
 			targetAlpha = alpha;
 			targetBeta = beta;
@@ -464,8 +351,8 @@ async function mountSurface3d(
 			e.preventDefault();
 			e.stopImmediatePropagation();
 		};
-		window.addEventListener('mousedown', onDown, true);
-		const onMove = (e: MouseEvent) => {
+		window.addEventListener('pointerdown', onDown, true);
+		const onMove = (e: PointerEvent) => {
 			if (!dragging) return;
 			const dx = e.clientX - startX;
 			const dy = e.clientY - startY;
@@ -479,13 +366,8 @@ async function mountSurface3d(
 		const onUp = () => {
 			dragging = false;
 		};
-		window.addEventListener('mousemove', onMove);
-		window.addEventListener('mouseup', onUp);
-		// plain click (no drag) toggles the hover-plane pin
-		host.addEventListener('click', (e: MouseEvent) => {
-			if (Math.hypot(e.clientX - startX, e.clientY - startY) > 6) return;
-			planePinned = !planePinned;
-		});
+		window.addEventListener('pointermove', onMove);
+		window.addEventListener('pointerup', onUp);
 	} catch (e) {
 		console.error('[pfg surface3d]', e);
 		(el as HTMLElement).innerHTML =
