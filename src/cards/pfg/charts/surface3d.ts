@@ -129,14 +129,26 @@ async function mountSurface3d(
 		const valueMin = def.min ?? 0;
 		const valueMax = def.max ?? Math.max(dataMax, valueMin + 1);
 		const valueMid = (valueMin + valueMax) / 2;
+		const xMid = (0 + 23) / 2;
+		const zMid = (0 + (days - 1)) / 2;
 		const boxWidth = 160;
 		const boxHeight = 60;
 		const boxDepth = 120;
-		const center: [number, number, number] = def.center ?? [
+		const frontCenter: [number, number, number] = [
 			boxWidth * (11.5 / 23 - 0.5),
 			boxHeight * ((valueMid - valueMin) / (valueMax - valueMin) - 0.5),
 			boxDepth / 2,
 		];
+		const volumeCenter: [number, number, number] = [
+			boxWidth * ((xMid - 0) / 23 - 0.5),
+			boxHeight * ((valueMid - valueMin) / (valueMax - valueMin) - 0.5),
+			boxDepth * ((zMid - 0) / (days - 1) - 0.5),
+		];
+		const center: [number, number, number] = (() => {
+			if (def.center) return def.center;
+			if (Array.isArray(def.rotate_center)) return def.rotate_center;
+			return def.rotate_center === 'front' ? frontCenter : volumeCenter;
+		})();
 		const unit = def.unit ?? '';
 		const chart = echarts.init(el);
 		chart.setOption({
