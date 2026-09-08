@@ -148,6 +148,7 @@ export interface PfgSurface3dChartDef extends PfgBaseChartDef {
 	pan_mouse_button?: 'left' | 'middle' | 'right';
 	center?: [number, number, number];
 	rotate_center?: 'front' | 'volume' | [number, number, number];
+	cache?: number;
 }
 
 export type PfgChartDef =

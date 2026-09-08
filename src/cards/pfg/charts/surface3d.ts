@@ -33,15 +33,52 @@ function ensureEchartsGl(): Promise<unknown> {
 	return echartsGlPromise;
 }
 
+function surface3dCacheKey(entity: string, days: number, scale: number, end: Date): string {
+	return `pfg3d:${entity}:${days}:${scale}:${end.toISOString().slice(0, 13)}`;
+}
+
+type Surface3dCache = { grid: number[][]; dayLabels: string[]; ts: number };
+
+function readCache(key: string, ttlMs: number): Surface3dCache | null {
+	try {
+		const raw = localStorage.getItem(key);
+		if (!raw) return null;
+		const v = JSON.parse(raw) as Surface3dCache;
+		if (Date.now() - v.ts > ttlMs) {
+			localStorage.removeItem(key);
+			return null;
+		}
+		return v;
+	} catch {
+		return null;
+	}
+}
+
+function writeCache(key: string, grid: number[][], dayLabels: string[]) {
+	try {
+		localStorage.setItem(key, JSON.stringify({ grid, dayLabels, ts: Date.now() }));
+	} catch {
+		/* ignore quota errors */
+	}
+}
+
 async function fetchHourlyDayGrid(
 	hass: HomeAssistant,
 	entity: string,
 	days: number,
 	scale: number,
+	cacheMinutes: number,
 ): Promise<{ grid: number[][]; dayLabels: string[] }> {
 	const end = new Date();
 	const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
 	const startMs = start.getTime();
+
+	if (cacheMinutes > 0) {
+		const key = surface3dCacheKey(entity, days, scale, end);
+		const cached = readCache(key, cacheMinutes * 60 * 1000);
+		if (cached) return { grid: cached.grid, dayLabels: cached.dayLabels };
+	}
+
 	const dayLabels: string[] = [];
 	for (let i = 0; i < days; i++) {
 		const d = new Date(startMs + i * 24 * 60 * 60 * 1000);
@@ -90,6 +127,11 @@ async function fetchHourlyDayGrid(
 	const grid = sum.map((row, di) =>
 		row.map((s, hr) => (cnt[di][hr] ? +(s / cnt[di][hr]).toFixed(2) : 0)),
 	);
+
+	if (cacheMinutes > 0 && cnt.flat().some((c) => c > 0)) {
+		writeCache(surface3dCacheKey(entity, days, scale, end), grid, dayLabels);
+	}
+
 	return { grid, dayLabels };
 }
 
@@ -105,8 +147,9 @@ async function mountSurface3d(
 	try {
 		await ensureEchartsGl();
 		const days = Math.max(2, Math.min(def.days ?? 30, 90));
+		const cacheMinutes = def.cache ?? 5;
 		const { grid, dayLabels } = entity
-			? await fetchHourlyDayGrid(hass, entity, days, def.scale ?? 1)
+			? await fetchHourlyDayGrid(hass, entity, days, def.scale ?? 1, cacheMinutes)
 			: { grid: [], dayLabels: [] };
 		const echarts = (
 			window as unknown as {
@@ -171,6 +214,7 @@ async function mountSurface3d(
 				min: 0,
 				max: days - 1,
 				interval: Math.max(1, Math.floor(days / 8)),
+				inverse: true,
 				axisLabel: {
 					color: '#9fb3c8',
 					formatter: (d: number) => dayLabels[d] ?? '',
