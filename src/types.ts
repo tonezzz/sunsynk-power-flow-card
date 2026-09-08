@@ -150,6 +150,8 @@ export interface PfgSurface3dChartDef extends PfgBaseChartDef {
 	rotate_center?: 'front' | 'volume' | [number, number, number];
 	cache?: number;
 	opacity?: number;
+	alpha?: number; // camera pitch (viewControl.alpha), default 18
+	beta?: number; // camera yaw (viewControl.beta), default 215 (far side facing viewer)
 }
 
 export type PfgChartDef =

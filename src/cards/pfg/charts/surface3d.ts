@@ -237,8 +237,8 @@ async function mountSurface3d(
 				},
 				viewControl: {
 					autoRotate: def.auto_rotate ?? false,
-					alpha: 18,
-					beta: 35,
+					alpha: def.alpha ?? 18,
+					beta: def.beta ?? 215,
 					center: center,
 					// left drag is handled by our own event loop so it works over
 					// the rendered surface; middle/right still use OrbitControl
@@ -277,13 +277,15 @@ async function mountSurface3d(
 		const host = el as HTMLElement;
 		host.style.touchAction = 'none';
 			host.style.background = def.bg ?? 'rgba(10,14,18,0.45)';
-		let currentAlpha = 18;
-		let currentBeta = 35;
+		const initAlpha = def.alpha ?? 18;
+		const initBeta = def.beta ?? 215;
+		let currentAlpha = initAlpha;
+		let currentBeta = initBeta;
 		let dragging = false;
 		let startX = 0;
 		let startY = 0;
-		let alphaStart = 18;
-		let betaStart = 35;
+		let alphaStart = initAlpha;
+		let betaStart = initBeta;
 		const s = def.rotate_sensitivity ?? 3;
 		const sens = Array.isArray(s) ? s : [s, s];
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -297,8 +299,8 @@ async function mountSurface3d(
 			return undefined;
 		};
 		let pending = false;
-		let targetAlpha = 18;
-		let targetBeta = 35;
+		let targetAlpha = initAlpha;
+		let targetBeta = initBeta;
 		const updateCamera = (alpha: number, beta: number) => {
 			targetAlpha = alpha;
 			targetBeta = beta;
