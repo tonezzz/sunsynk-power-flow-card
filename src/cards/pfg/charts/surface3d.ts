@@ -55,37 +55,69 @@ function surface3dCacheKey(
 	entity: string,
 	days: number,
 	scale: number,
-	end: Date,
 ): string {
-	return `pfg3d:${entity}:${days}:${scale}:${end.toISOString().slice(0, 13)}`;
+	return `pfg3d:${entity}:${days}:${scale}`;
 }
 
-type Surface3dCache = { grid: number[][]; dayLabels: string[]; ts: number };
+type Surface3dCache = {
+	grid: number[][];
+	dayLabels: string[];
+	start: number;
+	lastEnd: string;
+	ts: number;
+};
 
-function readCache(key: string, ttlMs: number): Surface3dCache | null {
+function readCache(key: string): Surface3dCache | null {
 	try {
 		const raw = localStorage.getItem(key);
 		if (!raw) return null;
-		const v = JSON.parse(raw) as Surface3dCache;
-		if (Date.now() - v.ts > ttlMs) {
-			localStorage.removeItem(key);
-			return null;
-		}
-		return v;
+		return JSON.parse(raw) as Surface3dCache;
 	} catch {
 		return null;
 	}
 }
 
-function writeCache(key: string, grid: number[][], dayLabels: string[]) {
+function writeCache(
+	key: string,
+	grid: number[][],
+	dayLabels: string[],
+	start: number,
+	lastEnd: string,
+) {
 	try {
 		localStorage.setItem(
 			key,
-			JSON.stringify({ grid, dayLabels, ts: Date.now() }),
+			JSON.stringify({
+				grid,
+				dayLabels,
+				start,
+				lastEnd,
+				ts: Date.now(),
+			}),
 		);
 	} catch {
 		/* ignore quota errors */
 	}
+}
+
+function makeParseLocal(tz?: string) {
+	return (ms: number) => {
+		const s = new Date(ms).toLocaleString(
+			'sv-SE',
+			tz ? { timeZone: tz } : undefined,
+		);
+		const [d, h] = s.split(' ');
+		const [y, m, day] = d.split('-').map(Number);
+		const [hr] = h.split(':').map(Number);
+		return { y, m, day, hr };
+	};
+}
+
+function makeLocalFmt(tz?: string) {
+	return (ms: number, opts: Intl.DateTimeFormatOptions) =>
+		tz
+			? new Date(ms).toLocaleString('en-GB', { timeZone: tz, ...opts })
+			: new Date(ms).toLocaleString('en-GB', opts);
 }
 
 export async function fetchHourlyDayGrid(
@@ -98,26 +130,11 @@ export async function fetchHourlyDayGrid(
 	const end = new Date();
 	const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
 	const startMs = start.getTime();
-
-	if (cacheMinutes > 0) {
-		const key = surface3dCacheKey(entity, days, scale, end);
-		const cached = readCache(key, cacheMinutes * 60 * 1000);
-		if (cached) return { grid: cached.grid, dayLabels: cached.dayLabels };
-	}
-
 	const tz = (hass as any).config?.time_zone;
-	const localFmt = (ms: number, opts: Intl.DateTimeFormatOptions) =>
-		tz
-			? new Date(ms).toLocaleString('en-GB', { timeZone: tz, ...opts })
-			: new Date(ms).toLocaleString('en-GB', opts);
-	const parseLocal = (ms: number) => {
-		const s = new Date(ms).toLocaleString('sv-SE', tz ? { timeZone: tz } : undefined);
-		const [d, h] = s.split(' ');
-		const [y, m, day] = d.split('-').map(Number);
-		const [hr] = h.split(':').map(Number);
-		return { y, m, day, hr };
-	};
+	const parseLocal = makeParseLocal(tz);
+	const localFmt = makeLocalFmt(tz);
 	const startLocal = parseLocal(startMs);
+
 	const dayLabels: string[] = [];
 	for (let i = 0; i < days; i++) {
 		const d = new Date(startMs + i * 24 * 60 * 60 * 1000);
@@ -125,6 +142,68 @@ export async function fetchHourlyDayGrid(
 			localFmt(d.getTime(), { day: '2-digit', month: 'short' }),
 		);
 	}
+
+	const key = surface3dCacheKey(entity, days, scale);
+	let cached: Surface3dCache | null = null;
+	if (cacheMinutes > 0) {
+		cached = readCache(key);
+		if (
+			cached &&
+			Date.now() - new Date(cached.lastEnd).getTime() <=
+				cacheMinutes * 60 * 1000
+		) {
+			const cachedStart = parseLocal(cached.start);
+			const sameStart =
+				cachedStart.y === startLocal.y &&
+				cachedStart.m === startLocal.m &&
+				cachedStart.day === startLocal.day;
+			if (sameStart) {
+				// same day window: start from the cached grid and pull only new hours
+				const grid = cached.grid.map((row) => [...row]);
+				const h = hass as HomeAssistant & {
+					callWS?: <T>(msg: object) => Promise<T>;
+				};
+				if (h.callWS) {
+					try {
+						const resp = (await h.callWS({
+							type: 'recorder/statistics_during_period',
+							start_time: cached.lastEnd,
+							end_time: end.toISOString(),
+							statistic_ids: [entity],
+							period: 'hour',
+						})) as Record<
+							string,
+							{ start: number | string; mean?: number }[]
+						>;
+						const stats = resp?.[entity] ?? [];
+						for (const s of stats) {
+							const t = new Date(s.start).getTime();
+							if (typeof s.mean === 'number') {
+								const loc = parseLocal(t);
+								const di = Math.round(
+									(Date.UTC(loc.y, loc.m - 1, loc.day) -
+										Date.UTC(
+											startLocal.y,
+											startLocal.m - 1,
+											startLocal.day,
+										)) /
+										(24 * 60 * 60 * 1000),
+								);
+								if (di >= 0 && di < days) {
+									grid[di][loc.hr] = +(s.mean * scale).toFixed(2);
+								}
+							}
+						}
+					} catch {
+						/* fall back to full fetch */
+					}
+				}
+				writeCache(key, grid, cached.dayLabels, startMs, end.toISOString());
+				return { grid, dayLabels: cached.dayLabels };
+			}
+		}
+	}
+
 	const sum: number[][] = Array.from({ length: days }, () =>
 		new Array(24).fill(0),
 	);
@@ -173,7 +252,7 @@ export async function fetchHourlyDayGrid(
 	);
 
 	if (cacheMinutes > 0 && cnt.flat().some((c) => c > 0)) {
-		writeCache(surface3dCacheKey(entity, days, scale, end), grid, dayLabels);
+		writeCache(key, grid, dayLabels, startMs, end.toISOString());
 	}
 
 	return { grid, dayLabels };
