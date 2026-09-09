@@ -244,7 +244,7 @@ export async function fetchHourlyDayGrid(
 		}
 	}
 	if (!cnt.flat().some((c) => c > 0)) {
-		const lists = await fetchHistorySeries(hass, [entity], days * 24);
+		const lists = await fetchHistorySeries(hass, [entity], days * 24, cacheMinutes);
 		for (const p of lists[0] ?? []) add(p.t * 1000, p.v * scale);
 	}
 	const grid = sum.map((row, di) =>

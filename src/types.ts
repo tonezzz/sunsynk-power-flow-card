@@ -102,6 +102,7 @@ export interface PfgBaseChartDef {
 	colors?: string[];
 	group_gap?: number;
 	interval?: number;
+	cache?: number;
 }
 
 export interface PfgGaugeChartDef extends PfgBaseChartDef {

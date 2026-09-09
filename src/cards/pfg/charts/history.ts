@@ -37,7 +37,8 @@ export function renderHistory(
 		!historyCache.has(cacheKey) ||
 		(historyCache.get(cacheKey)?.ts || 0) < end.getTime() - 5 * 60 * 1000
 	) {
-		const promise = fetchHistorySeries(hass, entityIds, hours)
+		const cacheMinutes = def.cache ?? Number.POSITIVE_INFINITY;
+		const promise = fetchHistorySeries(hass, entityIds, hours, cacheMinutes)
 			.then((lists) => {
 				if (lists.length === 0 || lists.every((l) => l.length === 0)) {
 					return svg`<svg viewBox="0 0 100 60" preserveAspectRatio="none" style="width:100%;height:100%;"><text x="50" y="30" text-anchor="middle" font-size="8" fill="#aaa" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">no history</text></svg>`;
