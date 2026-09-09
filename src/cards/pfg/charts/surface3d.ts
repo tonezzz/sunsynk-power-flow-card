@@ -4,6 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { PfgChartDef, PfgSurface3dChartDef } from '../../../types';
 import { fetchHistorySeries } from '../history';
 import { build3dBaseOption } from './pfg3d';
+import { attachHoverPlane, buildHoverPlaneSeries } from './pfg3d-hover';
 
 // ---------- surface3d (echarts-gl via CDN, loaded on demand) ----------
 
@@ -329,7 +330,32 @@ async function mountSurface3d(
 		})();
 		const unit = def.unit ?? '';
 		const chart = echarts.init(el);
-				chart.setOption({
+		const host = el as HTMLElement;
+		const planeOn =
+			typeof def.hover_plane === 'number'
+				? def.hover_plane > 0
+				: (def.hover_plane ?? false);
+		const series: object[] = [
+			{
+				type: 'surface',
+				data: flat,
+				dataShape: [days, 24],
+				shading: 'lambert',
+				silent: true,
+				itemStyle: { opacity: def.opacity ?? 1 },
+				wireframe: {
+					show: def.wireframe ?? true,
+					lineStyle: {
+						color: 'rgba(255,255,255,0.25)',
+						width: 1,
+					},
+				},
+			},
+		];
+		if (planeOn) {
+			series.push(buildHoverPlaneSeries(def, days, valueMin, valueMax, valueMid, X_MIN, X_MAX));
+		}
+		chart.setOption({
 			...build3dBaseOption({
 				def,
 				days,
@@ -346,123 +372,20 @@ async function mountSurface3d(
 				zMax: valueMax,
 				axisPointer: { lineStyle: { opacity: 0.12 } },
 			}),
-			series: [
-				{
-					type: 'surface',
-					data: flat,
-					dataShape: [days, 24],
-					shading: 'lambert',
-					silent: true,
-					itemStyle: { opacity: def.opacity ?? 1 },
-					wireframe: {
-						show: def.wireframe ?? true,
-						lineStyle: {
-							color: 'rgba(255,255,255,0.25)',
-							width: 1,
-						},
-					},
-				},
-				{
-					id: 'pfg3d-hover-plane',
-					type: 'surface',
-					// flat quad spanning the whole box at z = hovered value
-					data: [
-						[X_MIN, 0, valueMid],
-						[X_MAX, 0, valueMid],
-						[X_MIN, days - 1, valueMid],
-						[X_MAX, days - 1, valueMid],
-					],
-					dataShape: [2, 2],
-					shading: 'lambert',
-					silent: true,
-					animation: false,
-					itemStyle: {
-						opacity:
-							typeof def.hover_plane === 'number'
-								? def.hover_plane
-								: def.hover_plane === false
-									? 0
-									: 0.25,
-						color: def.hover_plane_color ?? '#4fc3f7',
-					},
-					wireframe: { show: false },
-				},
-			],
+			series,
 		});
-		let planePinned = false; // click toggles pin on the hover plane
-		const planeOn =
-			typeof def.hover_plane === 'number'
-				? def.hover_plane > 0
-				: (def.hover_plane ?? true);
 		if (planeOn) {
-			const setPlane = (vv: number) =>
-				chart.setOption(
-					{
-						series: [
-							{
-								id: 'pfg3d-hover-plane',
-								data: [
-									[0, 0, vv],
-									[23, 0, vv],
-									[0, days - 1, vv],
-									[23, days - 1, vv],
-								],
-							},
-						],
-					},
-					false,
-					false,
-				);
-			const clampV = (v: unknown) =>
-				typeof v === 'number' && !isNaN(v)
-					? Math.max(valueMin, Math.min(valueMax, v))
-					: undefined;
-			let lastDataMove = 0; // data-hover suppresses the pixel-projection path
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			(chart as any).on('mousemove', (ev: any) => {
-				if (planePinned || ev?.seriesId === 'pfg3d-hover-plane') return;
-				const vv = clampV(ev?.value?.[2] ?? ev?.data?.[2]);
-				if (vv !== undefined) {
-					lastDataMove = Date.now();
-					setPlane(vv);
-				}
-			});
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			(chart as any).on('updateAxisPointer', (ev: any) => {
-				if (planePinned) return;
-				const infos = ev?.axesInfo ?? [];
-				const xi = infos.find((a: { axisDim?: string }) => a.axisDim === 'x');
-				const yi = infos.find((a: { axisDim?: string }) => a.axisDim === 'y');
-				if (xi?.value == null || yi?.value == null) return;
-				const h = Math.max(0, Math.min(23, Math.round(xi.value)));
-				const d = Math.max(0, Math.min(days - 1, Math.round(yi.value)));
-				const vv = clampV(grid[d]?.[h]);
-				if (vv !== undefined) setPlane(vv);
-			});
-			// pointer over walls/canvas: project z-axis min/max to screen pixels
-			// and map the pointer's vertical position back to a kW level
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const chAny: any = chart;
-			const zr = chAny.getZr?.();
-			zr?.on('mousemove', (e: { offsetX: number; offsetY: number }) => {
-				if (planePinned || Date.now() - lastDataMove < 100) return;
-				const zMinPx = chAny.convertToPixel?.('grid3D', [0, 0, valueMin]);
-				const zMaxPx = chAny.convertToPixel?.('grid3D', [0, 0, valueMax]);
-				if (!Array.isArray(zMinPx) || !Array.isArray(zMaxPx)) return;
-				const dy = zMinPx[1] - zMaxPx[1];
-				if (!dy) return;
-				const v =
-					valueMin + ((zMinPx[1] - e.offsetY) / dy) * (valueMax - valueMin);
-				const vv = clampV(v);
-				if (vv !== undefined) setPlane(vv);
-			});
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			(chart as any).on('globalout', () => {
-				if (!planePinned) setPlane(valueMid);
+			attachHoverPlane(chart, {
+				def,
+				grid,
+				days,
+				valueMin,
+				valueMax,
+				valueMid,
+				host,
 			});
 		}
-		new ResizeObserver(() => chart.resize()).observe(el as HTMLElement);
-		const host = el as HTMLElement;
+		new ResizeObserver(() => chart.resize()).observe(host);
 		host.style.touchAction = 'none';
 		const initAlpha = def.alpha ?? 18;
 		const initBeta = def.beta ?? 215;
@@ -549,11 +472,6 @@ async function mountSurface3d(
 		window.addEventListener('pointermove', onMove, true);
 		window.addEventListener('pointerup', onUp, true);
 		window.addEventListener('pointercancel', onUp, true);
-		// plain click (no drag) toggles the hover-plane pin
-		host.addEventListener('click', (e: MouseEvent) => {
-			if (Math.hypot(e.clientX - startX, e.clientY - startY) > 6) return;
-			planePinned = !planePinned;
-		});
 	} catch (e) {
 		console.error('[pfg surface3d]', e);
 		(el as HTMLElement).innerHTML =
