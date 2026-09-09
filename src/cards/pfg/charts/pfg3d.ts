@@ -142,11 +142,10 @@ export function build3dCenter(opts: {
 	const cx = opts.boxWidth * ((xMid - xMin) / xRange - 0.5);
 	const valueRange = Math.max(1, opts.valueMax - opts.valueMin);
 	const valueCenter =
-		opts.boxHeight *
-		((valueMid - opts.valueMin) / valueRange - 0.5);
+		opts.boxHeight * ((valueMid - opts.valueMin) / valueRange - 0.5);
 	const verticalShift =
 		opts.viewOffset === undefined
-			? opts.boxHeight * 0.4
+			? opts.boxHeight * 0.3
 			: Math.max(-opts.boxHeight, Math.min(opts.boxHeight, opts.viewOffset));
 	const cz = valueCenter - verticalShift;
 	const cy = opts.boxDepth * ((dayMid - 0) / dayRange - 0.5);
