@@ -169,6 +169,8 @@ export interface PfgBar3dChartDef extends PfgBaseChartDef {
 	opacity?: number;
 	alpha?: number; // camera pitch (viewControl.alpha), default 18
 	beta?: number; // camera yaw (viewControl.beta), default 215
+	center?: [number, number, number];
+	rotate_center?: 'front' | 'volume' | [number, number, number];
 }
 
 export type PfgChartDef =

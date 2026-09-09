@@ -117,6 +117,38 @@ export function build3dBaseOption(opts: {
 	};
 }
 
+export function build3dCenter(opts: {
+	boxWidth: number;
+	boxHeight: number;
+	boxDepth: number;
+	xMin?: number;
+	xMax?: number;
+	valueMin: number;
+	valueMax: number;
+	days: number;
+	rotate_center?: 'front' | 'volume' | [number, number, number];
+	center?: [number, number, number];
+}): [number, number, number] {
+	if (opts.center) return opts.center;
+	if (Array.isArray(opts.rotate_center)) return opts.rotate_center;
+	const xMin = opts.xMin ?? 0;
+	const xMax = opts.xMax ?? 23;
+	const xMid = (xMin + xMax) / 2;
+	const xRange = xMax - xMin;
+	const valueMid = (opts.valueMin + opts.valueMax) / 2;
+	const dayMid = (opts.days - 1) / 2;
+	const dayRange = Math.max(1, opts.days - 1);
+	const cx = opts.boxWidth * ((xMid - xMin) / xRange - 0.5);
+	const valueRange = Math.max(1, opts.valueMax - opts.valueMin);
+	const cz =
+		opts.boxHeight *
+		((valueMid - opts.valueMin) / valueRange - 0.5);
+	const cy = opts.boxDepth * ((dayMid - 0) / dayRange - 0.5);
+	const frontCenter: [number, number, number] = [cx, cz, opts.boxDepth / 2];
+	const volumeCenter: [number, number, number] = [cx, cz, cy];
+	return opts.rotate_center === 'front' ? frontCenter : volumeCenter;
+}
+
 export function attach3dDrag(
 	chart: unknown,
 	host: HTMLElement,
