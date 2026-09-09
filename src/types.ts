@@ -67,7 +67,8 @@ export interface PfgBaseChartDef {
 		| 'area'
 		| 'cycle'
 		| 'group'
-		| 'surface3d';
+		| 'surface3d'
+		| 'bar3d';
 	entity?: string;
 	entities?: string[];
 	value?: number;
@@ -103,6 +104,7 @@ export interface PfgBaseChartDef {
 	group_gap?: number;
 	interval?: number;
 	cache?: number;
+	max_points?: number;
 }
 
 export interface PfgGaugeChartDef extends PfgBaseChartDef {

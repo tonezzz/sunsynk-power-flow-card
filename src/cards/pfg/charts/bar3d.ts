@@ -1,95 +1,16 @@
 import { html } from 'lit';
-import { ref } from 'lit/directives/ref.js';
-import { HomeAssistant } from 'custom-card-helpers';
-import { PfgBar3dChartDef } from '../../../types';
-import { ensureEchartsGl, fetchHourlyDayGrid } from './surface3d';
-import { attach3dDrag, build3dBaseOption, build3dCenter } from './pfg3d';
-import { build3dFlatData } from './pfg3d-data';
-
-async function mountBar3d(
-	el: Element | undefined,
-	hass: HomeAssistant,
-	def: PfgBar3dChartDef,
-): Promise<void> {
-	if (!el) return;
-	await ensureEchartsGl();
-	const echarts = (
-		window as unknown as { echarts: { init: (e: Element) => any } }
-	).echarts;
-	const entity = def.entity ?? (def.entities && def.entities[0]);
-	const days = Math.max(2, Math.min(def.days ?? 30, 90));
-	const cacheMinutes = def.cache ?? Number.POSITIVE_INFINITY;
-	const { grid, dayLabels } = entity
-		? await fetchHourlyDayGrid(hass, entity, days, def.scale ?? 1, cacheMinutes)
-		: { grid: [], dayLabels: [] };
-
-	const { flat } = build3dFlatData(grid, days);
-	const values = flat.map((p) => p[2]);
-	const valueMax = values.length ? Math.max(...values) : 0;
-	const valueMin = 0;
-	const unit = def.unit ?? '';
-	const boxWidth = 160;
-	const boxHeight = 60;
-	const boxDepth = 120;
-	const center = build3dCenter({
-		boxWidth,
-		boxHeight,
-		boxDepth,
-		valueMin,
-		valueMax,
-		days,
-		rotate_center: def.rotate_center,
-		center: def.center,
-		viewOffset: def.view_offset,
-	});
-
-	const chart = echarts.init(el);
-	const baseOption = build3dBaseOption({
-		def,
-		days,
-		dayLabels,
-		valueMin,
-		valueMax,
-		unit,
-		boxWidth,
-		boxHeight,
-		boxDepth,
-		center,
-	});
-	chart.setOption({
-		...baseOption,
-		series: [
-			{
-				type: 'bar3D',
-				data: flat,
-				shading: 'lambert',
-				silent: true,
-				itemStyle: { opacity: def.opacity ?? 1 },
-			},
-		],
-	});
-	chart.resize();
-	new ResizeObserver(() => chart.resize()).observe(el as HTMLElement);
-	const host = el as HTMLElement;
-	host.style.touchAction = 'none';
-	const s = def.rotate_sensitivity ?? 3;
-	const sens = Array.isArray(s) ? s : [s, s];
-	attach3dDrag(chart, host, {
-		alpha: def.alpha ?? 18,
-		beta: def.beta ?? 40,
-		sensitivity: sens as [number, number],
-		viewControl: baseOption.grid3D.viewControl,
-	});
-}
+import type { HomeAssistant } from 'custom-card-helpers';
+import type { PfgBar3dChartDef } from '../../../types';
+import './pfg3d-chart';
 
 export function renderBar3d(
 	def: PfgBar3dChartDef,
 	hass: HomeAssistant,
 ): unknown {
-	return html`<div
-		${ref((el) => {
-			void mountBar3d(el, hass, def);
-		})}
-		style="position:absolute;inset:0;pointer-events:auto;z-index:2;"
-	></div>`;
+	return html`<pfg-3d-chart
+		type="bar"
+		.def=${def}
+		.hass=${hass}
+		style="display:block;width:100%;height:100%;pointer-events:auto;"
+	></pfg-3d-chart>`;
 }
