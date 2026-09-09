@@ -46,13 +46,12 @@ async function mountBar3d(
 		xAxis3D: {
 			type: 'value',
 			name: 'Hour',
-				nameTextStyle: { fontWeight: 'bold', textShadowBlur: 3, textShadowColor: 'rgba(0,0,0,0.75)' },
+				nameTextStyle: { color: '#ffffff', fontWeight: 'bold', textShadowBlur: 3, textShadowColor: 'rgba(0,0,0,0.75)' },
 			min: HOUR_OFFSET,
 			max: HOUR_OFFSET + 23,
 			interval: 3,
-				inverse: true,
 			axisLabel: {
-				color: '#9fb3c8',
+				color: '#ffffff',
 					fontWeight: 'bold',
 					textShadowBlur: 3,
 					textShadowColor: 'rgba(0,0,0,0.75)',
@@ -65,12 +64,12 @@ async function mountBar3d(
 		yAxis3D: {
 			type: 'value',
 			name: 'Day',
-				nameTextStyle: { fontWeight: 'bold', textShadowBlur: 3, textShadowColor: 'rgba(0,0,0,0.75)' },
+				nameTextStyle: { color: '#ffffff', fontWeight: 'bold', textShadowBlur: 3, textShadowColor: 'rgba(0,0,0,0.75)' },
 			min: 0,
 			max: days - 1,
 			interval: Math.max(1, Math.floor(days / 8)),
 			axisLabel: {
-				color: '#9fb3c8',
+				color: '#ffffff',
 					fontWeight: 'bold',
 					textShadowBlur: 3,
 					textShadowColor: 'rgba(0,0,0,0.75)',
@@ -80,9 +79,9 @@ async function mountBar3d(
 		zAxis3D: {
 			type: 'value',
 			name: unit,
-				nameTextStyle: { fontWeight: 'bold', textShadowBlur: 3, textShadowColor: 'rgba(0,0,0,0.75)' },
+				nameTextStyle: { color: '#ffffff', fontWeight: 'bold', textShadowBlur: 3, textShadowColor: 'rgba(0,0,0,0.75)' },
 			min: 0,
-			axisLabel: { color: '#9fb3c8',
+			axisLabel: { color: '#ffffff',
 					fontWeight: 'bold',
 					textShadowBlur: 3,
 					textShadowColor: 'rgba(0,0,0,0.75)', fontWeight: 'bold', textShadowBlur: 3, textShadowColor: 'rgba(0,0,0,0.75)' },
