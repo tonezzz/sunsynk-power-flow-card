@@ -81,7 +81,7 @@ async function mountBar3d(
 				beta: def.beta ?? 215,
 				rotateMouseButton: def.rotate_mouse_button ?? 'left',
 				panMouseButton: def.pan_mouse_button ?? 'right',
-				rotateSensitivity: def.rotate_sensitivity ?? 1,
+				rotateSensitivity: Array.isArray(def.rotate_sensitivity) ? def.rotate_sensitivity[0] : (def.rotate_sensitivity ?? 1),
 				zoomSensitivity: def.zoom_sensitivity ?? 1,
 			},
 		},
