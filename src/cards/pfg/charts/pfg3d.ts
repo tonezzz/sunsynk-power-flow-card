@@ -98,7 +98,7 @@ export function build3dBaseOption(opts: {
 			viewControl: {
 				autoRotate: def.auto_rotate ?? false,
 				alpha: def.alpha ?? 18,
-				beta: def.beta ?? 215,
+				beta: def.beta ?? 40,
 				distance: distance ?? 300,
 				center,
 				rotateMouseButton: def.rotate_mouse_button ?? 'middle',
