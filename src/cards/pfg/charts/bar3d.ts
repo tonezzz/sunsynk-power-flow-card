@@ -25,7 +25,7 @@ async function mountBar3d(
 	const flat: number[][] = [];
 	for (let d = 0; d < days; d++) {
 		for (let h = 0; h < 24; h++) {
-			flat.push([h, d, grid[d]?.[h] ?? 0]);
+			flat.push([h, days - 1 - d, grid[d]?.[h] ?? 0]);
 		}
 	}
 	const values = flat.map((p) => p[2]);

@@ -51,7 +51,8 @@ export function build3dBaseOption(opts: {
 			formatter: (p: { value?: [number, number, number] }) => {
 				const [h, d, v] = p.value ?? [0, 0, 0];
 				const hr = Math.round(h) % 24;
-				return `${dayLabels[d] ?? ''} ${String(hr).padStart(2, '0')}:00 — ${v} ${unit}`;
+				const dayIndex = days - 1 - Math.round(d);
+				return `${dayLabels[dayIndex] ?? ''} ${String(hr).padStart(2, '0')}:00 — ${v} ${unit}`;
 			},
 			axisPointer,
 		},
@@ -73,10 +74,9 @@ export function build3dBaseOption(opts: {
 			min: 0,
 			max: days - 1,
 			interval: Math.max(1, Math.floor(days / 8)),
-			inverse: true,
 			axisLabel: {
 				...AXIS_TEXT_STYLE,
-				formatter: (d: number) => dayLabels[d] ?? '',
+				formatter: (d: number) => dayLabels[days - 1 - Math.round(d)] ?? '',
 			},
 		},
 		zAxis3D: {
