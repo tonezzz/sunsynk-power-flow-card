@@ -290,29 +290,35 @@ async function mountSurface3d(
 				};
 			}
 		).echarts;
+		const HOUR_OFFSET = 6;
+		const X_MIN = HOUR_OFFSET;
+		const X_MAX = HOUR_OFFSET + 24;
 		const flat: [number, number, number][] = [];
 		let dataMax = Number.NEGATIVE_INFINITY;
 		grid.forEach((row, d) =>
 			row.forEach((v, h) => {
-				flat.push([h, d, v]);
+				// 06:00 on the left, wrap through the night
+				const x = h < HOUR_OFFSET ? h + 24 : h;
+				flat.push([x, d, v]);
 				if (v > dataMax) dataMax = v;
 			}),
 		);
 		const valueMin = def.min ?? 0;
 		const valueMax = def.max ?? Math.max(dataMax, valueMin + 1);
 		const valueMid = (valueMin + valueMax) / 2;
-		const xMid = (0 + 23) / 2;
+		const xMid = (X_MIN + X_MAX) / 2;
 		const zMid = (0 + (days - 1)) / 2;
+		const xRange = X_MAX - X_MIN;
 		const boxWidth = 160;
 		const boxHeight = 60;
 		const boxDepth = 120;
 		const frontCenter: [number, number, number] = [
-			boxWidth * (11.5 / 23 - 0.5),
+			boxWidth * (((xMid - X_MIN) / xRange) - 0.5),
 			boxHeight * ((valueMid - valueMin) / (valueMax - valueMin) - 0.5),
 			boxDepth / 2,
 		];
 		const volumeCenter: [number, number, number] = [
-			boxWidth * ((xMid - 0) / 23 - 0.5),
+			boxWidth * (((xMid - X_MIN) / xRange) - 0.5),
 			boxHeight * ((valueMid - valueMin) / (valueMax - valueMin) - 0.5),
 			boxDepth * ((zMid - 0) / (days - 1) - 0.5),
 		];
@@ -326,18 +332,26 @@ async function mountSurface3d(
 		chart.setOption({
 			backgroundColor: 'transparent',
 			tooltip: {
-				formatter: (p: { value: number[] }) =>
-					`${dayLabels[p.value[1]] ?? ''} ${String(p.value[0]).padStart(2, '0')}:00 — ${p.value[2]}${unit ? ' ' + unit : ''}`,
+				formatter: (p: { value: number[] }) => {
+					const hr = Math.round(p.value[0]) % 24;
+					return `${dayLabels[p.value[1]] ?? ''} ${String(hr).padStart(2, '0')}:00 — ${p.value[2]}${unit ? ' ' + unit : ''}`;
+				},
 				// dim the axisPointer crosshair lines; the hover plane carries the cue
 				axisPointer: { lineStyle: { opacity: 0.12 } },
 			},
 			xAxis3D: {
 				type: 'value',
 				name: 'Hour',
-				min: 0,
-				max: 23,
+				min: X_MIN,
+				max: X_MAX,
 				interval: 3,
-				axisLabel: { color: '#9fb3c8' },
+				axisLabel: {
+					color: '#9fb3c8',
+					formatter: (h: number) => {
+						const hr = Math.round(h) % 24;
+						return String(hr).padStart(2, '0');
+					},
+				},
 			},
 			yAxis3D: {
 				type: 'value',
@@ -407,10 +421,10 @@ async function mountSurface3d(
 					type: 'surface',
 					// flat quad spanning the whole box at z = hovered value
 					data: [
-						[0, 0, valueMid],
-						[23, 0, valueMid],
-						[0, days - 1, valueMid],
-						[23, days - 1, valueMid],
+						[X_MIN, 0, valueMid],
+						[X_MAX, 0, valueMid],
+						[X_MIN, days - 1, valueMid],
+						[X_MAX, days - 1, valueMid],
 					],
 					dataShape: [2, 2],
 					shading: 'lambert',
