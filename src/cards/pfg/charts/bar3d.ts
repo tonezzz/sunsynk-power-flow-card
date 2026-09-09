@@ -20,7 +20,7 @@ async function mountBar3d(
 		? await fetchHourlyDayGrid(hass, entity, days, def.scale ?? 1, cacheMinutes)
 		: { grid: [], dayLabels: [] };
 
-	const HOUR_OFFSET = 6;
+	const HOUR_OFFSET = 0;
 	const flat: number[][] = [];
 	for (let d = 0; d < days; d++) {
 		for (let h = 0; h < 24; h++) {
@@ -47,7 +47,7 @@ async function mountBar3d(
 			type: 'value',
 			name: 'Hour',
 			min: HOUR_OFFSET,
-			max: HOUR_OFFSET + 24,
+			max: HOUR_OFFSET + 23,
 			interval: 3,
 			axisLabel: {
 				color: '#9fb3c8',
@@ -86,6 +86,7 @@ async function mountBar3d(
 				autoRotate: def.auto_rotate ?? false,
 				alpha: def.alpha ?? 18,
 				beta: def.beta ?? 215,
+				distance: 300,
 				rotateMouseButton: def.rotate_mouse_button ?? 'middle',
 				panMouseButton: def.pan_mouse_button ?? 'right',
 				rotateSensitivity: 0,
