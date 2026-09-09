@@ -290,14 +290,13 @@ async function mountSurface3d(
 				};
 			}
 		).echarts;
-		const HOUR_OFFSET = 6;
+		const HOUR_OFFSET = 0;
 		const X_MIN = HOUR_OFFSET;
-		const X_MAX = HOUR_OFFSET + 24;
+		const X_MAX = HOUR_OFFSET + 23;
 		const flat: [number, number, number][] = [];
 		let dataMax = Number.NEGATIVE_INFINITY;
 		grid.forEach((row, d) =>
 			row.forEach((v, h) => {
-				// 06:00 on the left, wrap through the night
 				const x = h < HOUR_OFFSET ? h + 24 : h;
 				flat.push([x, d, v]);
 				if (v > dataMax) dataMax = v;
@@ -384,6 +383,7 @@ async function mountSurface3d(
 					autoRotate: def.auto_rotate ?? false,
 					alpha: def.alpha ?? 18,
 					beta: def.beta ?? 215,
+					distance: 300,
 					center: center,
 					// left drag is handled by our own event loop so it works over
 					// the rendered surface; middle/right still use OrbitControl
