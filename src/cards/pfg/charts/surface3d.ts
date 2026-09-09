@@ -105,11 +105,24 @@ export async function fetchHourlyDayGrid(
 		if (cached) return { grid: cached.grid, dayLabels: cached.dayLabels };
 	}
 
+	const tz = (hass as any).config?.time_zone;
+	const localFmt = (ms: number, opts: Intl.DateTimeFormatOptions) =>
+		tz
+			? new Date(ms).toLocaleString('en-GB', { timeZone: tz, ...opts })
+			: new Date(ms).toLocaleString('en-GB', opts);
+	const parseLocal = (ms: number) => {
+		const s = new Date(ms).toLocaleString('sv-SE', tz ? { timeZone: tz } : undefined);
+		const [d, h] = s.split(' ');
+		const [y, m, day] = d.split('-').map(Number);
+		const [hr] = h.split(':').map(Number);
+		return { y, m, day, hr };
+	};
+	const startLocal = parseLocal(startMs);
 	const dayLabels: string[] = [];
 	for (let i = 0; i < days; i++) {
 		const d = new Date(startMs + i * 24 * 60 * 60 * 1000);
 		dayLabels.push(
-			d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
+			localFmt(d.getTime(), { day: '2-digit', month: 'short' }),
 		);
 	}
 	const sum: number[][] = Array.from({ length: days }, () =>
@@ -119,9 +132,14 @@ export async function fetchHourlyDayGrid(
 		new Array(24).fill(0),
 	);
 	const add = (t: number, v: number) => {
-		const di = Math.floor((t - startMs) / (24 * 60 * 60 * 1000));
+		const loc = parseLocal(t);
+		const di = Math.round(
+			(Date.UTC(loc.y, loc.m - 1, loc.day) -
+				Date.UTC(startLocal.y, startLocal.m - 1, startLocal.day)) /
+				(24 * 60 * 60 * 1000),
+		);
 		if (di < 0 || di >= days) return;
-		const hr = new Date(t).getHours();
+		const hr = loc.hr;
 		sum[di][hr] += v;
 		cnt[di][hr]++;
 	};
