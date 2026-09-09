@@ -4,6 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { PfgBar3dChartDef } from '../../../types';
 import { ensureEchartsGl, fetchHourlyDayGrid } from './surface3d';
 import { attach3dDrag, build3dBaseOption, build3dCenter } from './pfg3d';
+import { build3dFlatData } from './pfg3d-data';
 
 async function mountBar3d(
 	el: Element | undefined,
@@ -22,12 +23,7 @@ async function mountBar3d(
 		? await fetchHourlyDayGrid(hass, entity, days, def.scale ?? 1, cacheMinutes)
 		: { grid: [], dayLabels: [] };
 
-	const flat: number[][] = [];
-	for (let d = 0; d < days; d++) {
-		for (let h = 0; h < 24; h++) {
-			flat.push([h, days - 1 - d, grid[d]?.[h] ?? 0]);
-		}
-	}
+	const { flat } = build3dFlatData(grid, days);
 	const values = flat.map((p) => p[2]);
 	const valueMax = values.length ? Math.max(...values) : 0;
 	const valueMin = 0;

@@ -138,41 +138,31 @@ export interface PfgGroupChartDef extends PfgBaseChartDef {
 	direction?: 'vertical' | 'horizontal';
 }
 
-export interface PfgSurface3dChartDef extends PfgBaseChartDef {
-	type: 'surface3d';
+export interface Pfg3dBaseChartDef extends PfgBaseChartDef {
 	days?: number;
-	wireframe?: boolean;
 	auto_rotate?: boolean;
 	rotate_sensitivity?: number | [number, number];
 	zoom_sensitivity?: number;
 	rotate_mouse_button?: 'left' | 'middle' | 'right';
 	pan_mouse_button?: 'left' | 'middle' | 'right';
-	center?: [number, number, number];
-	rotate_center?: 'front' | 'volume' | [number, number, number];
 	cache?: number;
 	opacity?: number;
 	alpha?: number; // camera pitch (viewControl.alpha), default 18
 	beta?: number; // camera yaw (viewControl.beta), default 215 (far side facing viewer)
-	hover_plane?: boolean | number; // translucent horizontal plane at hovered value; number = opacity 0-1 (default 0.25)
-	hover_plane_color?: string; // default '#4fc3f7'
-	view_offset?: number; // positive shifts the chart upward in the card (default ~25% of boxHeight)
-}
-
-export interface PfgBar3dChartDef extends PfgBaseChartDef {
-	type: 'bar3d';
-	days?: number;
-	auto_rotate?: boolean;
-	rotate_sensitivity?: number | [number, number];
-	zoom_sensitivity?: number;
-	rotate_mouse_button?: 'left' | 'middle' | 'right';
-	pan_mouse_button?: 'left' | 'middle' | 'right';
-	cache?: number;
-	opacity?: number;
-	alpha?: number; // camera pitch (viewControl.alpha), default 18
-	beta?: number; // camera yaw (viewControl.beta), default 215
 	center?: [number, number, number];
 	rotate_center?: 'front' | 'volume' | [number, number, number];
 	view_offset?: number; // positive shifts the chart upward in the card
+}
+
+export interface PfgSurface3dChartDef extends Pfg3dBaseChartDef {
+	type: 'surface3d';
+	wireframe?: boolean;
+	hover_plane?: boolean | number; // translucent horizontal plane at hovered value; number = opacity 0-1 (default 0.25)
+	hover_plane_color?: string; // default '#4fc3f7'
+}
+
+export interface PfgBar3dChartDef extends Pfg3dBaseChartDef {
+	type: 'bar3d';
 }
 
 export type PfgChartDef =

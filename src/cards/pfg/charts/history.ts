@@ -7,7 +7,7 @@ import {
 	fetchHistorySeries,
 	mergeHistoryByTimestamp,
 	historyCache,
-} from '../history';
+} from '../history-cache';
 
 export function renderHistory(
 	def: PfgHistoryChartDef | PfgAreaChartDef,
