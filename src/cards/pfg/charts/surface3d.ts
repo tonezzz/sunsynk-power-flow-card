@@ -270,7 +270,7 @@ async function mountSurface3d(
 	try {
 		await ensureEchartsGl();
 		const days = Math.max(2, Math.min(def.days ?? 30, 90));
-		const cacheMinutes = def.cache ?? 5;
+		const cacheMinutes = def.cache ?? Number.POSITIVE_INFINITY;
 		const { grid, dayLabels } = entity
 			? await fetchHourlyDayGrid(
 					hass,
