@@ -341,11 +341,16 @@ async function mountSurface3d(
 			xAxis3D: {
 				type: 'value',
 				name: 'Hour',
+				nameTextStyle: { fontWeight: 'bold', textShadowBlur: 3, textShadowColor: 'rgba(0,0,0,0.75)' },
 				min: X_MIN,
 				max: X_MAX,
 				interval: 3,
+				inverse: true,
 				axisLabel: {
 					color: '#9fb3c8',
+					fontWeight: 'bold',
+					textShadowBlur: 3,
+					textShadowColor: 'rgba(0,0,0,0.75)',
 					formatter: (h: number) => {
 						const hr = Math.round(h) % 24;
 						return String(hr).padStart(2, '0');
@@ -355,21 +360,29 @@ async function mountSurface3d(
 			yAxis3D: {
 				type: 'value',
 				name: 'Day',
+				nameTextStyle: { fontWeight: 'bold', textShadowBlur: 3, textShadowColor: 'rgba(0,0,0,0.75)' },
 				min: 0,
 				max: days - 1,
 				interval: Math.max(1, Math.floor(days / 8)),
 				inverse: true,
 				axisLabel: {
 					color: '#9fb3c8',
+					fontWeight: 'bold',
+					textShadowBlur: 3,
+					textShadowColor: 'rgba(0,0,0,0.75)',
 					formatter: (d: number) => dayLabels[d] ?? '',
 				},
 			},
 			zAxis3D: {
 				type: 'value',
 				name: unit,
+				nameTextStyle: { fontWeight: 'bold', textShadowBlur: 3, textShadowColor: 'rgba(0,0,0,0.75)' },
 				min: valueMin,
 				max: valueMax,
-				axisLabel: { color: '#9fb3c8' },
+				axisLabel: { color: '#9fb3c8',
+					fontWeight: 'bold',
+					textShadowBlur: 3,
+					textShadowColor: 'rgba(0,0,0,0.75)', fontWeight: 'bold', textShadowBlur: 3, textShadowColor: 'rgba(0,0,0,0.75)' },
 			},
 			grid3D: {
 				boxWidth: boxWidth,
