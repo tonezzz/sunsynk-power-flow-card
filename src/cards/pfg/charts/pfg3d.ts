@@ -112,7 +112,7 @@ export function build3dBaseOption(opts: {
 			min: valueMin,
 			max: valueMax,
 			dimension: 2,
-			inRange: { color: ['#1a237e', '#00838f', '#ffd54f'] },
+			inRange: { color: ['#1565c0', '#00e5ff', '#ffea00'] },
 		},
 	};
 }
