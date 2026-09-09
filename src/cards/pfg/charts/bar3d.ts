@@ -32,9 +32,9 @@ async function mountBar3d(
 	const valueMax = values.length ? Math.max(...values) : 0;
 	const valueMin = 0;
 	const unit = def.unit ?? '';
-	const boxWidth = 220;
-	const boxHeight = 70;
-	const boxDepth = 200;
+	const boxWidth = 160;
+	const boxHeight = 60;
+	const boxDepth = 120;
 	const center = build3dCenter({
 		boxWidth,
 		boxHeight,
