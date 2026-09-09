@@ -5,7 +5,6 @@ import { PfgChartDef, PfgSurface3dChartDef } from '../../../types';
 import { fetchHistorySeries } from '../history-cache';
 import { attach3dDrag, build3dBaseOption, build3dCenter } from './pfg3d';
 import { build3dFlatData } from './pfg3d-data';
-import { attachHoverPlane, buildHoverPlaneSeries } from './pfg3d-hover';
 
 // ---------- surface3d (echarts-gl via CDN, loaded on demand) ----------
 
@@ -300,6 +299,7 @@ async function mountSurface3d(
 		const dataMax = grid.length ? rawMax : Number.NEGATIVE_INFINITY;
 		const valueMin = def.min ?? 0;
 		const valueMax = def.max ?? Math.max(dataMax, valueMin + 1);
+		const valueMid = (valueMin + valueMax) / 2;
 		const boxWidth = 160;
 		const boxHeight = 60;
 		const boxDepth = 120;
@@ -323,6 +323,7 @@ async function mountSurface3d(
 			typeof def.hover_plane === 'number'
 				? def.hover_plane > 0
 				: (def.hover_plane ?? false);
+		const hover = planeOn ? await import('./pfg3d-hover') : null;
 		const series: object[] = [
 			{
 				type: 'surface',
@@ -340,8 +341,8 @@ async function mountSurface3d(
 				},
 			},
 		];
-		if (planeOn) {
-			series.push(buildHoverPlaneSeries(def, days, valueMin, valueMax, valueMid, X_MIN, X_MAX));
+		if (hover) {
+			series.push(hover.buildHoverPlaneSeries(def, days, valueMin, valueMax, valueMid, X_MIN, X_MAX));
 		}
 		const baseOption = build3dBaseOption({
 			def,
@@ -363,8 +364,8 @@ async function mountSurface3d(
 			...baseOption,
 			series,
 		});
-		if (planeOn) {
-			attachHoverPlane(chart, {
+		if (hover) {
+			hover.attachHoverPlane(chart, {
 				def,
 				grid,
 				days,
