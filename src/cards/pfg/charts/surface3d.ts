@@ -3,6 +3,7 @@ import { ref } from 'lit/directives/ref.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { PfgChartDef, PfgSurface3dChartDef } from '../../../types';
 import { fetchHistorySeries } from '../history';
+import { build3dBaseOption } from './pfg3d';
 
 // ---------- surface3d (echarts-gl via CDN, loaded on demand) ----------
 
@@ -328,87 +329,23 @@ async function mountSurface3d(
 		})();
 		const unit = def.unit ?? '';
 		const chart = echarts.init(el);
-		chart.setOption({
-			backgroundColor: 'transparent',
-			tooltip: {
-				formatter: (p: { value: number[] }) => {
-					const hr = Math.round(p.value[0]) % 24;
-					return `${dayLabels[p.value[1]] ?? ''} ${String(hr).padStart(2, '0')}:00 — ${p.value[2]}${unit ? ' ' + unit : ''}`;
-				},
-				// dim the axisPointer crosshair lines; the hover plane carries the cue
+				chart.setOption({
+			...build3dBaseOption({
+				def,
+				days,
+				dayLabels,
+				valueMin,
+				valueMax,
+				unit,
+				boxWidth,
+				boxHeight,
+				boxDepth,
+				center,
+				distance: 300,
+				zMin: valueMin,
+				zMax: valueMax,
 				axisPointer: { lineStyle: { opacity: 0.12 } },
-			},
-			xAxis3D: {
-				type: 'category',
-				name: 'Hour',
-				nameTextStyle: { color: '#ffffff', fontWeight: 'bold', textShadowBlur: 3, textShadowColor: 'rgba(0,0,0,0.75)' },
-				data: Array.from({ length: 24 }, (_, i) => i),
-				axisLabel: {
-					color: '#ffffff',
-					fontWeight: 'bold',
-					textShadowBlur: 3,
-					textShadowColor: 'rgba(0,0,0,0.75)',
-					interval: 3,
-					formatter: (v: number) => `${String(v).padStart(2, '0')}:00`,
-				},
-
-			},
-			yAxis3D: {
-				type: 'value',
-				name: 'Day',
-				nameTextStyle: { color: '#ffffff', fontWeight: 'bold', textShadowBlur: 3, textShadowColor: 'rgba(0,0,0,0.75)' },
-				min: 0,
-				max: days - 1,
-				interval: Math.max(1, Math.floor(days / 8)),
-				inverse: true,
-				axisLabel: {
-					color: '#ffffff',
-					fontWeight: 'bold',
-					textShadowBlur: 3,
-					textShadowColor: 'rgba(0,0,0,0.75)',
-					formatter: (d: number) => dayLabels[d] ?? '',
-				},
-			},
-			zAxis3D: {
-				type: 'value',
-				name: unit,
-				nameTextStyle: { color: '#ffffff', fontWeight: 'bold', textShadowBlur: 3, textShadowColor: 'rgba(0,0,0,0.75)' },
-				min: valueMin,
-				max: valueMax,
-				axisLabel: { color: '#ffffff',
-					fontWeight: 'bold',
-					textShadowBlur: 3,
-					textShadowColor: 'rgba(0,0,0,0.75)', fontWeight: 'bold', textShadowBlur: 3, textShadowColor: 'rgba(0,0,0,0.75)' },
-			},
-			grid3D: {
-				boxWidth: boxWidth,
-				boxHeight: boxHeight,
-				boxDepth: boxDepth,
-				light: {
-					main: { intensity: 1.2 },
-					ambient: { intensity: 0.3 },
-				},
-				viewControl: {
-					autoRotate: def.auto_rotate ?? false,
-					alpha: def.alpha ?? 18,
-					beta: def.beta ?? 215,
-					distance: 300,
-					center: center,
-					// left drag is handled by our own event loop so it works over
-					// the rendered surface; middle/right still use OrbitControl
-					rotateMouseButton: def.rotate_mouse_button ?? 'middle',
-					panMouseButton: def.pan_mouse_button ?? 'right',
-					rotateSensitivity: 0,
-					zoomSensitivity: def.zoom_sensitivity ?? 1,
-				},
-			},
-			visualMap: {
-				show: false,
-				min: valueMin,
-				max: valueMax,
-				dimension: 2,
-				inRange: { color: ['#1a237e', '#00838f', '#ffd54f'] },
-			},
+			}),
 			series: [
 				{
 					type: 'surface',
