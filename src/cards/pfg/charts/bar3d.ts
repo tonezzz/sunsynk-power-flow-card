@@ -44,22 +44,19 @@ async function mountBar3d(
 			},
 		},
 		xAxis3D: {
-			type: 'value',
+			type: 'category',
 			name: 'Hour',
-				nameTextStyle: { color: '#ffffff', fontWeight: 'bold', textShadowBlur: 3, textShadowColor: 'rgba(0,0,0,0.75)' },
-			min: HOUR_OFFSET,
-			max: HOUR_OFFSET + 23,
-			interval: 3,
+			nameTextStyle: { color: '#ffffff', fontWeight: 'bold', textShadowBlur: 3, textShadowColor: 'rgba(0,0,0,0.75)' },
+			data: Array.from({ length: 24 }, (_, i) => i),
 			axisLabel: {
 				color: '#ffffff',
-					fontWeight: 'bold',
-					textShadowBlur: 3,
-					textShadowColor: 'rgba(0,0,0,0.75)',
-				formatter: (h: number) => {
-					const hr = Math.round(h) % 24;
-					return `${String(hr).padStart(2, '0')}:00`;
-				},
+				fontWeight: 'bold',
+				textShadowBlur: 3,
+				textShadowColor: 'rgba(0,0,0,0.75)',
+				interval: 3,
+				formatter: (v: number) => `${String(v).padStart(2, '0')}:00`,
 			},
+
 		},
 		yAxis3D: {
 			type: 'value',
