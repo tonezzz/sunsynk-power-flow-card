@@ -320,6 +320,7 @@ async function mountSurface3d(
 			days,
 			rotate_center: def.rotate_center,
 			center: def.center,
+			viewOffset: def.view_offset,
 		});
 		const unit = def.unit ?? '';
 		const chart = echarts.init(el);

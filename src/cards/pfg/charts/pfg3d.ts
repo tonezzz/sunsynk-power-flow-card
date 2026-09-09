@@ -128,6 +128,7 @@ export function build3dCenter(opts: {
 	days: number;
 	rotate_center?: 'front' | 'volume' | [number, number, number];
 	center?: [number, number, number];
+	viewOffset?: number;
 }): [number, number, number] {
 	if (opts.center) return opts.center;
 	if (Array.isArray(opts.rotate_center)) return opts.rotate_center;
@@ -140,9 +141,14 @@ export function build3dCenter(opts: {
 	const dayRange = Math.max(1, opts.days - 1);
 	const cx = opts.boxWidth * ((xMid - xMin) / xRange - 0.5);
 	const valueRange = Math.max(1, opts.valueMax - opts.valueMin);
-	const cz =
+	const valueCenter =
 		opts.boxHeight *
 		((valueMid - opts.valueMin) / valueRange - 0.5);
+	const verticalShift =
+		opts.viewOffset === undefined
+			? opts.boxHeight * 0.25
+			: Math.max(-opts.boxHeight, Math.min(opts.boxHeight, opts.viewOffset));
+	const cz = valueCenter - verticalShift;
 	const cy = opts.boxDepth * ((dayMid - 0) / dayRange - 0.5);
 	const frontCenter: [number, number, number] = [cx, cz, opts.boxDepth / 2];
 	const volumeCenter: [number, number, number] = [cx, cz, cy];
