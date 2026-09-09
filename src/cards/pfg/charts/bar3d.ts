@@ -20,10 +20,13 @@ async function mountBar3d(
 		? await fetchHourlyDayGrid(hass, entity, days, def.scale ?? 1, cacheMinutes)
 		: { grid: [], dayLabels: [] };
 
+	const HOUR_OFFSET = 6;
 	const flat: number[][] = [];
 	for (let d = 0; d < days; d++) {
 		for (let h = 0; h < 24; h++) {
-			flat.push([h, d, grid[d]?.[h] ?? 0]);
+			// shift x so 06:00 is at the left and the day wraps around
+			const x = h < HOUR_OFFSET ? h + 24 : h;
+			flat.push([x, d, grid[d]?.[h] ?? 0]);
 		}
 	}
 	const values = flat.map((p) => p[2]);
@@ -36,18 +39,22 @@ async function mountBar3d(
 		tooltip: {
 			formatter: (p: { value?: [number, number, number] }) => {
 				const [h, d, v] = p.value ?? [0, 0, 0];
-				return `${dayLabels[d] ?? ''} ${String(h).padStart(2, '0')}:00 — ${v} ${unit}`;
+				const hr = Math.round(h) % 24;
+				return `${dayLabels[d] ?? ''} ${String(hr).padStart(2, '0')}:00 — ${v} ${unit}`;
 			},
 		},
 		xAxis3D: {
 			type: 'value',
 			name: 'Hour',
-			min: 0,
-			max: 23,
+			min: HOUR_OFFSET,
+			max: HOUR_OFFSET + 24,
 			interval: 3,
 			axisLabel: {
 				color: '#9fb3c8',
-				formatter: (h: number) => `${h}:00`,
+				formatter: (h: number) => {
+					const hr = Math.round(h) % 24;
+					return `${String(hr).padStart(2, '0')}:00`;
+				},
 			},
 		},
 		yAxis3D: {
