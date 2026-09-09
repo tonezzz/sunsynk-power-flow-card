@@ -300,7 +300,7 @@ async function mountSurface3d(
 		grid.forEach((row, d) =>
 			row.forEach((v, h) => {
 				const x = h < HOUR_OFFSET ? h + 24 : h;
-				flat.push([x, d, v]);
+				flat.push([x, days - 1 - d, v]);
 				if (v > dataMax) dataMax = v;
 			}),
 		);

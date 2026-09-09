@@ -90,7 +90,7 @@ export function attachHoverPlane(
 		const yi = infos.find((a: { axisDim?: string }) => a.axisDim === 'y');
 		if (xi?.value == null || yi?.value == null) return;
 		const h = Math.max(0, Math.min(23, Math.round(xi.value)));
-		const d = Math.max(0, Math.min(days - 1, Math.round(yi.value)));
+		const d = Math.max(0, Math.min(days - 1, days - 1 - Math.round(yi.value)));
 		const vv = clampV(grid[d]?.[h]);
 		if (vv !== undefined) setPlane(vv);
 	};
