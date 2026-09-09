@@ -155,6 +155,7 @@ export interface PfgSurface3dChartDef extends PfgBaseChartDef {
 	beta?: number; // camera yaw (viewControl.beta), default 215 (far side facing viewer)
 	hover_plane?: boolean | number; // translucent horizontal plane at hovered value; number = opacity 0-1 (default 0.25)
 	hover_plane_color?: string; // default '#4fc3f7'
+	view_offset?: number; // positive shifts the chart upward in the card (default ~25% of boxHeight)
 }
 
 export interface PfgBar3dChartDef extends PfgBaseChartDef {
@@ -171,6 +172,7 @@ export interface PfgBar3dChartDef extends PfgBaseChartDef {
 	beta?: number; // camera yaw (viewControl.beta), default 215
 	center?: [number, number, number];
 	rotate_center?: 'front' | 'volume' | [number, number, number];
+	view_offset?: number; // positive shifts the chart upward in the card
 }
 
 export type PfgChartDef =

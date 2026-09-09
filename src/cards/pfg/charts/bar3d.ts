@@ -44,6 +44,7 @@ async function mountBar3d(
 		days,
 		rotate_center: def.rotate_center,
 		center: def.center,
+		viewOffset: def.view_offset,
 	});
 
 	const chart = echarts.init(el);
