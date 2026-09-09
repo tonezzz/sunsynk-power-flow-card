@@ -11,7 +11,7 @@ async function mountBar3d(
 ): Promise<void> {
 	if (!el) return;
 	await ensureEchartsGl();
-	const echarts = (window as unknown as { echarts: { init: (e: Element) => { setOption: (o: object) => void; resize: () => void } } }).echarts;
+	const echarts = (window as unknown as { echarts: { init: (e: Element) => any } }).echarts;
 	const def = chartDef;
 	const entity = def.entity ?? (def.entities && def.entities[0]);
 	const days = Math.max(2, Math.min(def.days ?? 30, 90));
@@ -79,9 +79,9 @@ async function mountBar3d(
 				autoRotate: def.auto_rotate ?? false,
 				alpha: def.alpha ?? 18,
 				beta: def.beta ?? 215,
-				rotateMouseButton: def.rotate_mouse_button ?? 'left',
+				rotateMouseButton: def.rotate_mouse_button ?? 'middle',
 				panMouseButton: def.pan_mouse_button ?? 'right',
-				rotateSensitivity: Array.isArray(def.rotate_sensitivity) ? def.rotate_sensitivity[0] : (def.rotate_sensitivity ?? 1),
+				rotateSensitivity: 0,
 				zoomSensitivity: def.zoom_sensitivity ?? 1,
 			},
 		},
@@ -97,19 +97,98 @@ async function mountBar3d(
 				type: 'bar3D',
 				data: flat,
 				shading: 'lambert',
+				silent: true,
 				itemStyle: { opacity: def.opacity ?? 1 },
 			},
 		],
 	});
 	chart.resize();
 	new ResizeObserver(() => chart.resize()).observe(el as HTMLElement);
-	(el as HTMLElement).style.touchAction = 'none';
+	const host = el as HTMLElement;
+	host.style.touchAction = 'none';
+
+	const initAlpha = def.alpha ?? 18;
+	const initBeta = def.beta ?? 215;
+	let currentAlpha = initAlpha;
+	let currentBeta = initBeta;
+	let dragging = false;
+	let startX = 0;
+	let startY = 0;
+	let alphaStart = initAlpha;
+	let betaStart = initBeta;
+	const s = def.rotate_sensitivity ?? 3;
+	const sens = Array.isArray(s) ? s : [s, s];
+
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const chartAny = chart as any;
+	const getControl = () => {
+		const views = chartAny?._componentsViews ?? [];
+		for (let i = 0; i < views.length; i++) {
+			const c = views[i]?._control;
+			if (c?.setAlpha && c?.setBeta) return c;
+		}
+		return undefined;
+	};
+	let pending = false;
+	let targetAlpha = initAlpha;
+	let targetBeta = initBeta;
+	const updateCamera = (alpha: number, beta: number) => {
+		targetAlpha = alpha;
+		targetBeta = beta;
+		if (pending) return;
+		pending = true;
+		requestAnimationFrame(() => {
+			pending = false;
+			currentAlpha = targetAlpha;
+			currentBeta = targetBeta;
+			const ctrl = getControl();
+			if (ctrl) {
+				ctrl.setAlpha(targetAlpha);
+				ctrl.setBeta(targetBeta);
+			} else {
+				chartAny.setOption(
+					{
+						grid3D: {
+							viewControl: {
+								alpha: targetAlpha,
+								beta: targetBeta,
+							},
+						},
+					},
+					false,
+					false,
+				);
+			}
+		});
+	};
+	const onDown = (e: PointerEvent) => {
+		if (e.button !== 0) return;
+		dragging = true;
+		startX = e.clientX;
+		startY = e.clientY;
+		alphaStart = currentAlpha;
+		betaStart = currentBeta;
+		e.preventDefault();
+		e.stopImmediatePropagation();
+	};
+	host.addEventListener('pointerdown', onDown);
+	const onMove = (e: PointerEvent) => {
+		if (!dragging) return;
+		const dx = e.clientX - startX;
+		const dy = e.clientY - startY;
+		const beta = betaStart + (dx * sens[0]) / 20;
+		const alpha = Math.max(-90, Math.min(90, alphaStart - (dy * sens[1]) / 20));
+		updateCamera(alpha, beta);
+	};
+	const onUp = () => {
+		dragging = false;
+	};
+	window.addEventListener('pointermove', onMove, true);
+	window.addEventListener('pointerup', onUp, true);
+	window.addEventListener('pointercancel', onUp, true);
 }
 
-export function renderBar3d(
-	def: PfgBar3dChartDef,
-	hass: HomeAssistant,
-): unknown {
+export function renderBar3d(def: PfgBar3dChartDef, hass: HomeAssistant): unknown {
 	return html`<div
 		${ref((el) => {
 			void mountBar3d(el, hass, def);
