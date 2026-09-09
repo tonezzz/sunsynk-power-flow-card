@@ -33,18 +33,19 @@ async function mountBar3d(
 	const unit = def.unit ?? '';
 
 	const chart = echarts.init(el);
+	const baseOption = build3dBaseOption({
+		def,
+		days,
+		dayLabels,
+		valueMin: 0,
+		valueMax,
+		unit,
+		boxWidth: 220,
+		boxHeight: 70,
+		boxDepth: 200,
+	});
 	chart.setOption({
-		...build3dBaseOption({
-			def,
-			days,
-			dayLabels,
-			valueMin: 0,
-			valueMax,
-			unit,
-			boxWidth: 220,
-			boxHeight: 70,
-			boxDepth: 200,
-		}),
+		...baseOption,
 		series: [
 			{
 				type: 'bar3D',
@@ -63,8 +64,9 @@ async function mountBar3d(
 	const sens = Array.isArray(s) ? s : [s, s];
 	attach3dDrag(chart, host, {
 		alpha: def.alpha ?? 18,
-		beta: def.beta ?? 215,
+		beta: def.beta ?? 40,
 		sensitivity: sens as [number, number],
+		viewControl: baseOption.grid3D.viewControl,
 	});
 }
 

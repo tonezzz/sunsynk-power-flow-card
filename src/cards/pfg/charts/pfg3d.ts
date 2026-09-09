@@ -124,16 +124,12 @@ export function attach3dDrag(
 		alpha: number;
 		beta: number;
 		sensitivity: [number, number];
-		damping?: number;
-		betaDamping?: number;
-		waitForControl?: boolean;
+		viewControl: Record<string, unknown>;
 	},
 ): () => void {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const chartAny = chart as any;
 	const [xSens, ySens] = opts.sensitivity;
-	const alphaDamp = opts.damping ?? 1;
-	const betaDamp = opts.betaDamping ?? 1;
 	let currentAlpha = opts.alpha;
 	let currentBeta = opts.beta;
 	let targetAlpha = opts.alpha;
@@ -144,6 +140,7 @@ export function attach3dDrag(
 	let alphaStart = opts.alpha;
 	let betaStart = opts.beta;
 	let pending = false;
+	const viewControl = opts.viewControl;
 
 	const getControl = () => {
 		const views = chartAny?._componentsViews ?? [];
@@ -153,12 +150,6 @@ export function attach3dDrag(
 		}
 		return undefined;
 	};
-	if (opts.waitForControl) {
-		for (let i = 0; i < 60; i++) {
-			const c = getControl();
-			if (c) break;
-		}
-	}
 
 	const updateCamera = (alpha: number, beta: number) => {
 		targetAlpha = alpha;
@@ -178,8 +169,9 @@ export function attach3dDrag(
 					{
 						grid3D: {
 							viewControl: {
-								alpha: targetAlpha,
-								beta: targetBeta,
+								...viewControl,
+								alpha: currentAlpha,
+								beta: currentBeta,
 							},
 						},
 					},
