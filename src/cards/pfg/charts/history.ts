@@ -4,6 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { PfgAreaChartDef, PfgHistoryChartDef } from '../../../types';
 import { hexToRgba, resolveChartValue } from '../shared';
 import {
+	downsampleHistory,
 	fetchHistorySeries,
 	mergeHistoryByTimestamp,
 	historyCache,
@@ -37,13 +38,19 @@ export function renderHistory(
 		!historyCache.has(cacheKey) ||
 		(historyCache.get(cacheKey)?.ts || 0) < end.getTime() - 5 * 60 * 1000
 	) {
-		const cacheMinutes = def.cache ?? Number.POSITIVE_INFINITY;
+		// History/area charts keep raw state changes. Caching very long windows
+		// in localStorage silently exceeds quota; default to memory-only.
+		const cacheMinutes = def.cache ?? 0;
+		const maxPoints = def.max_points ?? 1000;
 		const promise = fetchHistorySeries(hass, entityIds, hours, cacheMinutes)
 			.then((lists) => {
 				if (lists.length === 0 || lists.every((l) => l.length === 0)) {
 					return svg`<svg viewBox="0 0 100 60" preserveAspectRatio="none" style="width:100%;height:100%;"><text x="50" y="30" text-anchor="middle" font-size="8" fill="#aaa" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">no history</text></svg>`;
 				}
-				const merged = mergeHistoryByTimestamp(lists, scale);
+				let merged = mergeHistoryByTimestamp(lists, scale);
+				if (merged.length > maxPoints) {
+					merged = downsampleHistory(merged, maxPoints);
+				}
 				const width = 100;
 				const height = 60;
 				const pad = 4;
@@ -137,6 +144,12 @@ export function renderHistory(
 					svg`<svg viewBox="0 0 100 60" preserveAspectRatio="none" style="width:100%;height:100%;"><text x="50" y="30" text-anchor="middle" font-size="8" fill="#aaa" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));">no history</text></svg>`,
 			);
 		historyCache.set(cacheKey, { ts: end.getTime(), promise });
+		// Evict stale in-memory SVG caches so the Map does not grow forever.
+		for (const [k, v] of historyCache) {
+			if (v.ts < end.getTime() - 5 * 60 * 1000) {
+				historyCache.delete(k);
+			}
+		}
 	}
 	const tpl = historyCache.get(cacheKey)!.promise;
 	return until(
