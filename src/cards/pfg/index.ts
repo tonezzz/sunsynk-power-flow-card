@@ -23,4 +23,4 @@ export { renderPfgChart, registerChart } from './registry';
 export type { PfgCell, ChartRenderer } from './registry';
 export { STATUS_COLORS, hexToRgba, stateToStatus } from './shared';
 export { chartOverlayStyle } from './place';
-export { historyCache } from './history';
+export { historyCache } from './history-cache';

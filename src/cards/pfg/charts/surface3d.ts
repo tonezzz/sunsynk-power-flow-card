@@ -2,8 +2,9 @@ import { html } from 'lit';
 import { ref } from 'lit/directives/ref.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { PfgChartDef, PfgSurface3dChartDef } from '../../../types';
-import { fetchHistorySeries } from '../history';
+import { fetchHistorySeries } from '../history-cache';
 import { attach3dDrag, build3dBaseOption, build3dCenter } from './pfg3d';
+import { build3dFlatData } from './pfg3d-data';
 import { attachHoverPlane, buildHoverPlaneSeries } from './pfg3d-hover';
 
 // ---------- surface3d (echarts-gl via CDN, loaded on demand) ----------
@@ -295,15 +296,8 @@ async function mountSurface3d(
 		const HOUR_OFFSET = 0;
 		const X_MIN = HOUR_OFFSET;
 		const X_MAX = HOUR_OFFSET + 23;
-		const flat: [number, number, number][] = [];
-		let dataMax = Number.NEGATIVE_INFINITY;
-		grid.forEach((row, d) =>
-			row.forEach((v, h) => {
-				const x = h < HOUR_OFFSET ? h + 24 : h;
-				flat.push([x, days - 1 - d, v]);
-				if (v > dataMax) dataMax = v;
-			}),
-		);
+		const { flat, dataMax: rawMax } = build3dFlatData(grid, days, HOUR_OFFSET);
+		const dataMax = grid.length ? rawMax : Number.NEGATIVE_INFINITY;
 		const valueMin = def.min ?? 0;
 		const valueMax = def.max ?? Math.max(dataMax, valueMin + 1);
 		const boxWidth = 160;
