@@ -3,7 +3,7 @@ import { ref } from 'lit/directives/ref.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { PfgChartDef, PfgSurface3dChartDef } from '../../../types';
 import { fetchHistorySeries } from '../history';
-import { build3dBaseOption } from './pfg3d';
+import { attach3dDrag, build3dBaseOption } from './pfg3d';
 import { attachHoverPlane, buildHoverPlaneSeries } from './pfg3d-hover';
 
 // ---------- surface3d (echarts-gl via CDN, loaded on demand) ----------
@@ -355,23 +355,24 @@ async function mountSurface3d(
 		if (planeOn) {
 			series.push(buildHoverPlaneSeries(def, days, valueMin, valueMax, valueMid, X_MIN, X_MAX));
 		}
+		const baseOption = build3dBaseOption({
+			def,
+			days,
+			dayLabels,
+			valueMin,
+			valueMax,
+			unit,
+			boxWidth,
+			boxHeight,
+			boxDepth,
+			center,
+			distance: 300,
+			zMin: valueMin,
+			zMax: valueMax,
+			axisPointer: { lineStyle: { opacity: 0.12 } },
+		});
 		chart.setOption({
-			...build3dBaseOption({
-				def,
-				days,
-				dayLabels,
-				valueMin,
-				valueMax,
-				unit,
-				boxWidth,
-				boxHeight,
-				boxDepth,
-				center,
-				distance: 300,
-				zMin: valueMin,
-				zMax: valueMax,
-				axisPointer: { lineStyle: { opacity: 0.12 } },
-			}),
+			...baseOption,
 			series,
 		});
 		if (planeOn) {
@@ -387,91 +388,14 @@ async function mountSurface3d(
 		}
 		new ResizeObserver(() => chart.resize()).observe(host);
 		host.style.touchAction = 'none';
-		const initAlpha = def.alpha ?? 18;
-		const initBeta = def.beta ?? 215;
-		let currentAlpha = initAlpha;
-		let currentBeta = initBeta;
-		let dragging = false;
-		let startX = 0;
-		let startY = 0;
-		let alphaStart = initAlpha;
-		let betaStart = initBeta;
 		const s = def.rotate_sensitivity ?? 3;
 		const sens = Array.isArray(s) ? s : [s, s];
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const chartAny = chart as any;
-		const getControl = () => {
-			const views = chartAny?._componentsViews ?? [];
-			for (let i = 0; i < views.length; i++) {
-				const c = views[i]?._control;
-				if (c?.setAlpha && c?.setBeta) return c;
-			}
-			return undefined;
-		};
-		let pending = false;
-		let targetAlpha = initAlpha;
-		let targetBeta = initBeta;
-		const updateCamera = (alpha: number, beta: number) => {
-			targetAlpha = alpha;
-			targetBeta = beta;
-			if (pending) return;
-			pending = true;
-			requestAnimationFrame(() => {
-				pending = false;
-				currentAlpha = targetAlpha;
-				currentBeta = targetBeta;
-				// echarts-gl OrbitControl does NOT pick up viewControl changes
-				// via setOption — drive the control instance directly.
-				const ctrl = getControl();
-				if (ctrl) {
-					ctrl.setAlpha(targetAlpha);
-					ctrl.setBeta(targetBeta);
-				} else {
-					chartAny.setOption(
-						{
-							grid3D: {
-								viewControl: {
-									alpha: targetAlpha,
-									beta: targetBeta,
-								},
-							},
-						},
-						false,
-						false,
-					);
-				}
-			});
-		};
-		const onDown = (e: PointerEvent) => {
-			if (e.button !== 0) return;
-			dragging = true;
-			startX = e.clientX;
-			startY = e.clientY;
-			alphaStart = currentAlpha;
-			betaStart = currentBeta;
-			e.preventDefault();
-			e.stopImmediatePropagation();
-		};
-		// bind on host (not window) so sibling overlays outside the chart
-		// can't shadow the hit-test; events on the canvas bubble up here
-		host.addEventListener('pointerdown', onDown);
-		const onMove = (e: PointerEvent) => {
-			if (!dragging) return;
-			const dx = e.clientX - startX;
-			const dy = e.clientY - startY;
-			const beta = betaStart + (dx * sens[0]) / 20;
-			const alpha = Math.max(
-				-90,
-				Math.min(90, alphaStart - (dy * sens[1]) / 20),
-			);
-			updateCamera(alpha, beta);
-		};
-		const onUp = () => {
-			dragging = false;
-		};
-		window.addEventListener('pointermove', onMove, true);
-		window.addEventListener('pointerup', onUp, true);
-		window.addEventListener('pointercancel', onUp, true);
+		attach3dDrag(chart, host, {
+			alpha: def.alpha ?? 18,
+			beta: def.beta ?? 40,
+			sensitivity: sens as [number, number],
+			viewControl: baseOption.grid3D.viewControl,
+		});
 	} catch (e) {
 		console.error('[pfg surface3d]', e);
 		(el as HTMLElement).innerHTML =
