@@ -52,7 +52,7 @@ function surface3dCacheKey(
 	days: number,
 	scale: number,
 ): string {
-	return `pfg3d:${entity}:${days}:${scale}`;
+	return `pfg3d:${entity}:${days}:${scale}:v2`;
 }
 
 type Surface3dCache = {
@@ -120,7 +120,10 @@ type HassWithWS = HomeAssistant & {
 	callWS?: <T>(msg: object) => Promise<T>;
 };
 
-const pendingGrid = new Map<string, Promise<{ grid: number[][]; dayLabels: string[] }>>();
+const pendingGrid = new Map<
+	string,
+	Promise<{ grid: number[][]; dayLabels: string[] }>
+>();
 
 async function fetchStatisticsPeriod(
 	hass: HomeAssistant,
@@ -156,13 +159,14 @@ export async function fetchHourlyDayGrid(
 	const end = new Date();
 	const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
 	const startMs = start.getTime();
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const tz = (hass as any).config?.time_zone;
 	const parseLocal = makeParseLocal(tz);
 	const localFmt = makeLocalFmt(tz);
 	const startLocal = parseLocal(startMs);
 
 	const dayLabels: string[] = [];
-	for (let i = 0; i < days; i++) {
+	for (let i = 0; i <= days; i++) {
 		const d = new Date(startMs + i * 24 * 60 * 60 * 1000);
 		dayLabels.push(localFmt(d.getTime(), { day: '2-digit', month: 'short' }));
 	}
@@ -221,7 +225,7 @@ export async function fetchHourlyDayGrid(
 												)) /
 												(24 * 60 * 60 * 1000),
 										);
-										if (di >= 0 && di < days) {
+										if (di >= 0 && di <= days) {
 											grid[di][loc.hr] = +(s.mean * scale).toFixed(2);
 										}
 									}
@@ -255,10 +259,10 @@ export async function fetchHourlyDayGrid(
 		return pendingGrid.get(dedupKey)!;
 	}
 
-	const sum: number[][] = Array.from({ length: days }, () =>
+	const sum: number[][] = Array.from({ length: days + 1 }, () =>
 		new Array(24).fill(0),
 	);
-	const cnt: number[][] = Array.from({ length: days }, () =>
+	const cnt: number[][] = Array.from({ length: days + 1 }, () =>
 		new Array(24).fill(0),
 	);
 	const add = (t: number, v: number) => {
@@ -268,7 +272,7 @@ export async function fetchHourlyDayGrid(
 				Date.UTC(startLocal.y, startLocal.m - 1, startLocal.day)) /
 				(24 * 60 * 60 * 1000),
 		);
-		if (di < 0 || di >= days) return;
+		if (di < 0 || di > days) return;
 		const hr = loc.hr;
 		sum[di][hr] += v;
 		cnt[di][hr]++;

@@ -3,7 +3,7 @@ import type { HomeAssistant } from 'custom-card-helpers';
 import type { PfgBar3dChartDef, PfgSurface3dChartDef } from '../../../types';
 import { ensureEchartsGl, fetchHourlyDayGrid } from './pfg3d-loader';
 import { build3dBaseOption, build3dCenter } from './pfg3d';
-import { build3dFlatData } from './pfg3d-data';
+import { build3dFlatData, build3dBarData } from './pfg3d-data';
 import { attach3dDrag } from './pfg3d-camera';
 
 export type Pfg3dDef = PfgSurface3dChartDef | PfgBar3dChartDef;
@@ -43,6 +43,11 @@ export class Pfg3dChart extends LitElement {
 	private lastKey = '';
 	private initialized = false;
 	private disposed = false;
+	private pulseTimer?: number;
+	private barData?: object[];
+	private days = 0;
+	private pulseOpacity = 1;
+	private pulseDelta = -0.15;
 
 	render() {
 		return html`<div id="chart"></div>`;
@@ -107,7 +112,9 @@ export class Pfg3dChart extends LitElement {
 		const el = this.renderRoot.querySelector('#chart') as HTMLElement | null;
 		if (!el) return;
 
-		const echarts = (window as unknown as { echarts?: { init: (e: Element) => unknown } }).echarts;
+		const echarts = (
+			window as unknown as { echarts?: { init: (e: Element) => unknown } }
+		).echarts;
 		if (!echarts) return;
 
 		this.chart = echarts.init(el);
@@ -122,9 +129,12 @@ export class Pfg3dChart extends LitElement {
 		await this.refresh(true);
 
 		if (this.refreshTimer) window.clearInterval(this.refreshTimer);
-		this.refreshTimer = window.setInterval(() => {
-			void this.refresh(false);
-		}, 5 * 60 * 1000);
+		this.refreshTimer = window.setInterval(
+			() => {
+				void this.refresh(false);
+			},
+			5 * 60 * 1000,
+		);
 	}
 
 	private async refresh(force: boolean) {
@@ -134,7 +144,11 @@ export class Pfg3dChart extends LitElement {
 
 		const key = this.buildKey();
 		const now = Date.now();
-		if (!force && key === this.lastKey && now - this.lastFetch < 5 * 60 * 1000) {
+		if (
+			!force &&
+			key === this.lastKey &&
+			now - this.lastFetch < 5 * 60 * 1000
+		) {
 			return;
 		}
 
@@ -155,7 +169,6 @@ export class Pfg3dChart extends LitElement {
 			this.lastFetch = now;
 			this.lastKey = key;
 		} catch (e) {
-			// eslint-disable-next-line no-console
 			console.error('[pfg3d] refresh failed', e);
 		}
 	}
@@ -166,9 +179,18 @@ export class Pfg3dChart extends LitElement {
 			setOption: (o: object, notMerge?: boolean, lazyUpdate?: boolean) => void;
 			resize: () => void;
 		};
-		const days = Math.max(2, Math.min(this.def.days ?? 30, 90));
+		const days = grid.length;
 		const HOUR_OFFSET = 0;
 		const { flat, dataMax: rawMax } = build3dFlatData(grid, days, HOUR_OFFSET);
+		let barData: object[] | undefined;
+		if (this.type === 'bar') {
+			const bd = build3dBarData(grid, days, HOUR_OFFSET);
+			barData = bd.barData;
+			this.barData = barData;
+			this.days = days;
+		} else {
+			this.barData = undefined;
+		}
 		const dataMax = grid.length ? rawMax : Number.NEGATIVE_INFINITY;
 		const valueMin = this.def.min ?? 0;
 		const valueMax = this.def.max ?? Math.max(dataMax, valueMin + 1);
@@ -192,9 +214,7 @@ export class Pfg3dChart extends LitElement {
 		});
 
 		const axisPointer =
-			this.type === 'surface'
-				? { lineStyle: { opacity: 0.12 } }
-				: undefined;
+			this.type === 'surface' ? { lineStyle: { opacity: 0.12 } } : undefined;
 
 		const baseOption = build3dBaseOption({
 			def: this.def,
@@ -264,11 +284,14 @@ export class Pfg3dChart extends LitElement {
 			series.push({
 				id: 'pfg3d-bar',
 				type: 'bar3D',
-				data: flat,
+				data: barData,
 				shading: 'lambert',
 				silent: true,
+				animation: true,
+				animationDuration: 400,
 				itemStyle: { opacity: this.def.opacity ?? 1 },
 			});
+			this.startPulse();
 		}
 
 		if (!this.cleanupDrag) {
@@ -293,13 +316,50 @@ export class Pfg3dChart extends LitElement {
 				visualMap: { min: valueMin, max: valueMax },
 				yAxis3D: {
 					axisLabel: {
-						formatter: (d: number) =>
-							dayLabels[days - 1 - Math.round(d)] ?? '',
+						formatter: (d: number) => dayLabels[days - 1 - Math.round(d)] ?? '',
 					},
 				},
 				zAxis3D: { min: valueMin, max: valueMax },
 			});
 		}
+	}
+
+	private startPulse() {
+		if (this.pulseTimer) return;
+		this.pulseTimer = window.setInterval(() => this.pulse(), 600);
+	}
+
+	private pulse() {
+		if (this.type !== 'bar' || !this.chart || !this.barData || this.days < 1)
+			return;
+		this.pulseOpacity += this.pulseDelta;
+		if (this.pulseOpacity <= 0.35) {
+			this.pulseOpacity = 0.35;
+			this.pulseDelta = 0.15;
+		}
+		if (this.pulseOpacity >= 1) {
+			this.pulseOpacity = 1;
+			this.pulseDelta = -0.15;
+		}
+		const pulseIndex =
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			this.barData.findIndex((p: any) => p.itemStyle);
+		if (pulseIndex < 0) return;
+		const pulsed = this.barData.map(
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(p: any, i: number) => {
+				if (i !== pulseIndex) return p;
+				const itemStyle = {
+					...(p.itemStyle ?? {}),
+					opacity: this.pulseOpacity,
+				};
+				return { ...p, itemStyle };
+			},
+		);
+		const chart = this.chart as {
+			setOption: (o: object, notMerge?: boolean, lazyUpdate?: boolean) => void;
+		};
+		chart.setOption({ series: [{ id: 'pfg3d-bar', data: pulsed }] });
 	}
 
 	private dispose() {
@@ -308,6 +368,10 @@ export class Pfg3dChart extends LitElement {
 		if (this.refreshTimer) {
 			window.clearInterval(this.refreshTimer);
 			this.refreshTimer = undefined;
+		}
+		if (this.pulseTimer) {
+			window.clearInterval(this.pulseTimer);
+			this.pulseTimer = undefined;
 		}
 		if (this.scheduled) {
 			window.clearTimeout(this.scheduled);
