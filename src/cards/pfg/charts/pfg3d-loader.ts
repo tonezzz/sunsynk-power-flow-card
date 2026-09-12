@@ -52,7 +52,7 @@ function surface3dCacheKey(
 	days: number,
 	scale: number,
 ): string {
-	return `pfg3d:${entity}:${days}:${scale}:v2`;
+	return `pfg3d:${entity}:${days}:${scale}:v5`;
 }
 
 type Surface3dCache = {

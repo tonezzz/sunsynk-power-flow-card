@@ -302,10 +302,9 @@ export class Pfg3dChart extends LitElement {
 				id: 'pfg3d-bar',
 				type: 'bar3D',
 				data: barData,
-				shading: 'lambert',
-				silent: false,
-				animation: true,
-				animationDuration: 400,
+				shading: 'color',
+				silent: true,
+				animation: false,
 				itemStyle: { opacity: this.def.opacity ?? 1 },
 			});
 			this.startPulse();
@@ -343,7 +342,7 @@ export class Pfg3dChart extends LitElement {
 
 	private startPulse() {
 		if (this.pulseTimer) return;
-		this.pulseTimer = window.setInterval(() => this.pulse(), 600);
+		this.pulseTimer = window.setInterval(() => this.pulse(), 1200);
 	}
 
 	private pulse() {
@@ -376,7 +375,11 @@ export class Pfg3dChart extends LitElement {
 		const chart = this.chart as {
 			setOption: (o: object, notMerge?: boolean, lazyUpdate?: boolean) => void;
 		};
-		chart.setOption({ series: [{ id: 'pfg3d-bar', data: pulsed }] });
+		chart.setOption(
+			{ series: [{ id: 'pfg3d-bar', data: pulsed }] },
+			false,
+			true,
+		);
 	}
 
 	private dispose() {

@@ -107,6 +107,11 @@ export function attach3dDrag(
 		startY = e.clientY;
 		alphaStart = currentAlpha;
 		betaStart = currentBeta;
+		try {
+			host.setPointerCapture(e.pointerId);
+		} catch {
+			/* ignore */
+		}
 		e.preventDefault();
 		e.stopImmediatePropagation();
 	};
@@ -118,8 +123,13 @@ export function attach3dDrag(
 		const alpha = Math.max(-90, Math.min(90, alphaStart - (dy * ySens) / 20));
 		updateCamera(alpha, beta);
 	};
-	const onUp = () => {
+	const onUp = (e: PointerEvent) => {
 		dragging = false;
+		try {
+			host.releasePointerCapture(e.pointerId);
+		} catch {
+			/* ignore */
+		}
 	};
 
 	host.addEventListener('pointerdown', onDown);
