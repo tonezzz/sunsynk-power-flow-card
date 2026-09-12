@@ -233,6 +233,23 @@ export class Pfg3dChart extends LitElement {
 			axisPointer,
 		});
 
+		if (this.type === 'bar') {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(baseOption as any).tooltip = {
+				show: true,
+				trigger: 'item',
+				confine: true,
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				formatter: (params: any) => {
+					const [x, y, v] = params.value as [number, number, number];
+					const d = days - 1 - Math.round(y);
+					const day = dayLabels[d] ?? '';
+					const hour = `${String(Math.round(x)).padStart(2, '0')}:00`;
+					return `${day} ${hour}<br />${v.toFixed(2)} ${unit}`;
+				},
+			};
+		}
+
 		const series: object[] = [];
 		if (this.type === 'surface') {
 			const sdef = this.def as PfgSurface3dChartDef;
@@ -286,7 +303,7 @@ export class Pfg3dChart extends LitElement {
 				type: 'bar3D',
 				data: barData,
 				shading: 'lambert',
-				silent: true,
+				silent: false,
 				animation: true,
 				animationDuration: 400,
 				itemStyle: { opacity: this.def.opacity ?? 1 },

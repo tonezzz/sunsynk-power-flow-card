@@ -270,10 +270,7 @@ export const pfgCard = (
 							const icon = tileIcons[key];
 							const status = getTileStatus(key);
 							const color = status ? statusColors[status] : undefined;
-							const entityState =
-								config.pfg_entities?.[key] && hass
-									? hass.states[config.pfg_entities[key]]?.state
-									: '';
+							const title = '';
 							const sumDef = config.pfg_sums?.[key];
 							const sumText =
 								sumDef && hass
@@ -332,7 +329,6 @@ export const pfgCard = (
 							const fillChart = charts.some(
 								(d) => d.position === 'fill' || d.position === 'bg',
 							);
-							const title = `Tile ${key}${status ? ' – ' + status : ''}${entityState ? ' (' + entityState + ')' : ''}`;
 							const cellBg =
 								ts?.bg ??
 								(imgSrc || fillChart
@@ -371,7 +367,8 @@ export const pfgCard = (
 									style="${cellStyle}"
 									title="${title}"
 								>
-									${dbgTag('cell', '#c62828')}${labelOverlay} ${valueLabelOverlay}
+									${dbgTag('cell', '#c62828')}${labelOverlay}
+									${valueLabelOverlay}
 									${
 										icon
 											? html`<ha-icon
